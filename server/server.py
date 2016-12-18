@@ -43,7 +43,7 @@ def ok():
 
 
 @app.route('/models')
-def cauchy_problem_input():
+def show_models():
     elements = [
         {
             'title': 'Модели',
