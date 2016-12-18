@@ -1,0 +1,51 @@
+<form type=submit>
+	<div style="text-align:center">
+		{% for element in elements %}
+			{% if element.type == "choice" %}
+				<div class="input-group">
+					<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+
+					<div class="btn-group input-group">
+
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+							<span data-bind="label">{{ (element.options | selectattr("id", "equalto", element.default) | list)[0].title}}</span>&nbsp;<span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu">
+							{% for option in element.options %}
+								<li><a href="#" target_id={{option.id}}>{{option.title}}</a></li>
+							{% endfor %}
+						</ul>
+					</div>
+					<input type="hidden" name={{element.id}} class="form-control" value="{{element.default}}" />
+					<script type="text/javascript">
+						$( document.body ).on( 'click', '.dropdown-menu li', function( event ) {
+
+							var $target = $( event.currentTarget );
+
+							$target.closest( '.btn-group' )
+								.find( '[data-bind="label"]' ).text( $target.text() )
+								.end()
+								.children( '.dropdown-toggle' ).dropdown( 'toggle' );
+
+							$('input[name={{element.id}}]').val($target.find('a').attr('target_id'));
+							return false;
+
+						});
+					</script>
+				</div>
+			{% else %}
+				<div class="input-group">
+					<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+					<input type="text" name={{element.id}} class="form-control" value="{{element.default}}" />
+				</div>
+			{% endif %}
+		{% endfor %}
+		<input type=hidden name=result value=1 />
+        <br>
+		<button type="submit" class="btn btn-default">Отправить</button>
+		{% if return_url %}
+			<button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
+		{% endif %}
+	</div>
+</form>
+

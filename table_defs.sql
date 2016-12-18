@@ -1,0 +1,50 @@
+CREATE TABLE IF NOT EXISTS "data" (
+"index" INTEGER,
+"Issue Code" INTEGER,
+"Issue Name" TEXT,
+"Put^Call" TEXT,
+"Contract Month" INTEGER,
+"Strike Price" REAL,
+"Settlement Price" REAL,
+"Theoretical Price" REAL,
+"Underlying Index" REAL,
+"Volatility " REAL,
+"Interest Rate" REAL,
+"Days until Maturity" INTEGER,
+"Underlying Name" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "data1" (
+"index" INTEGER,
+"DATE1" TIMESTAMP,
+"YEAR" INTEGER,
+"MONTH" INTEGER,
+"EXPIR" REAL,
+"STRIKE" REAL,
+"cRIC" TEXT,
+"pRIC" TEXT,
+"cBID_RH" TEXT,
+"cBID_TS" TIMESTAMP,
+"cBID_V" REAL,
+"cASK_RH" TEXT,
+"cASK_TS" TIMESTAMP,
+"cASK_V" REAL,
+"cSTL_RH" TEXT,
+"cSTL_TS" TEXT,
+"cSTL_V" REAL,
+"pBID_RH" TEXT,
+"pBID_TS" TIMESTAMP,
+"pBID_V" REAL,
+"pASK_RH" TEXT,
+"pASK_TS" TIMESTAMP,
+"pASK_V" REAL,
+"pSTL_RH" TEXT,
+"pSTL_TS" TEXT,
+"pSTL_V" REAL,
+"fRIC" TEXT,
+"fSTL_RH" TEXT,
+"fSTL_TS" TIMESTAMP,
+"fSTL_V" REAL
+)
+
+

@@ -1,0 +1,8 @@
+<div style="text-align:center">
+	{% for element in output_elements %}
+			<div class="input-group">
+				<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+				<input type="text" class="form-control" value="{{element.value}}" readonly />
+			</div>
+	{% endfor %}
+</div>
