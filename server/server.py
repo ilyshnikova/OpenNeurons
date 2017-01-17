@@ -4,6 +4,8 @@ from flask import Flask, send_from_directory, render_template, request
 import json
 import os
 
+from sqlalchemy import *
+
 app = Flask(__name__)
 
 def add_default_values(elements, request):
@@ -14,13 +16,24 @@ def add_default_values(elements, request):
 
     return elements
 
+user='postgres'
+host='localhost'
+db_name='trmdb'
+
+engine = create_engine('postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name))
+conn = engine.connect()
+
+metadata = MetaData(engine)
+
+models_table = Table('model', metadata, autoload=True)
+
+
 @app.route('/files/<path:path>')
 def send_file(path):
     return send_from_directory('files', path)
 
 @app.route('/')
 def ok():
-
     return render_template(
         'menu.html',
         elements=[
@@ -44,46 +57,46 @@ def ok():
 
 @app.route('/models')
 def show_models():
+    s = select([models_table])
+    result = conn.execute(s)
+    options = []
+
+    for row in result:
+        print row
+        options += [{'title': 'Data analysing model : "' + str(row['model_name']) + '"', 'id': str(int(row['model_id']))}]
+
+    print options
+
     elements = [
         {
             'title': 'Модели',
             'id': 'models',
             'type' : 'choice',
-            'options' : [
-                {
-                    'title' : 'First algorithm model',
-                    'id' : 'first',
-                },
-                {
-                    'title' : 'Second algorithm model',
-                    'id' : 'second',
-                },
-                {
-                    'title' : 'Third algorithm model',
-                    'id' : 'third',
-                },
-            ],
-            'default': 'first',
+            'options' : options,
+            'default': options[0]['id'],
         },
     ]
     return_url="/"
 
     if request.args.get('result'):
+        s = select([models_table]).where(models_table.c.model_id == request.args.get('models'))
+        result = conn.execute(s).__iter__().next()
+
         return render_template(
             "output.html",
             elements=add_default_values(elements, request),
             output_elements=[
                 {
-                    'title' : 'какое то значение',
-                    'value' : 1234,
+                    'title' : 'Model name',
+                    'value' : result['model_name']
                 },
                 {
-                    'title' : 'еще какое то значение',
-                    'value' : 5678,
+                    'title' : 'Description',
+                    'value' : result['description'],
                 },
                 {
-                    'title' : 'и еще значение',
-                    'value' : 901,
+                    'title' : 'Model type',
+                    'value' : result['model_type']
                 },
             ],
             return_url=return_url,
@@ -94,9 +107,6 @@ def show_models():
             elements=elements,
             return_url=return_url,
         )
-
-
-
 
 if __name__ == "__main__":
     os.chdir("/root/open_trm/")
