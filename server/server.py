@@ -3,6 +3,7 @@
 from flask import Flask, send_from_directory, render_template, request
 import json
 import os
+import json
 
 from sqlalchemy import *
 
@@ -16,11 +17,11 @@ def add_default_values(elements, request):
 
     return elements
 
-user='postgres'
-host='localhost'
-db_name='trmdb'
+with open('../config.json') as data_file:
+        config = json.load(data_file)
 
-engine = create_engine('postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name))
+engine = create_engine('postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=config['database']['user'], host=config['database']['host'], db_name=config['database']['db_name']))
+
 conn = engine.connect()
 
 metadata = MetaData(engine)
@@ -108,12 +109,14 @@ def show_models():
             return_url=return_url,
         )
 
+
+
 if __name__ == "__main__":
-    os.chdir("/root/open_trm/")
+#    os.chdir("/root/open_trm/")
     app.jinja_env.tests['equalto'] = lambda value, other : value == other
     app.run(
-        host='::',
-        port=5001,
+        host=config['server']['host'],
+        port=int(config['server']['port']),
         use_reloader=False,
         debug=True,
         threaded=False,
