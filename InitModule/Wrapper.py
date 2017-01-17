@@ -7,7 +7,7 @@ def save_model(model_name, model):
         json_file.write(model.to_json())
 
 def save_models_weights(model_name, loaded_model):
-    name_h5 = model_name + '.h5'
+    name_h5 = model_name + '_weights.h5'
     print("Saved model to disk")
     return loaded_model.save_weights(name_h5)
 
@@ -19,7 +19,6 @@ def load_model(lib_name, model_name ):
     json_file.close()
     model = keras.models.model_from_json(loaded_model_json)
     return model
-
 
 class Classifier():
     def __init__(self, lib_name, model_name, model_description, model_args):
@@ -75,7 +74,7 @@ class Classifier():
             loaded_model = load_model(lib_name = self.lib_name,
                                       model_name=self.model_name)
 
-            name_h5 = self.model_name + '.h5'
+            name_h5 = self.model_name + '_weights.h5'
             loaded_model.load_weights(name_h5)
             print("Loaded model from disk")
 
