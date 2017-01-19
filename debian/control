@@ -1,0 +1,18 @@
+Source: open-trm
+Section: trm
+Priority: extra
+Maintainer: Anastasiya Tsarkova  <ilyshnikova@yandex.ru>
+Build-Depends:
+	python-flask,
+	postgresql,
+	postgresql-contrib
+Standards-Version: 0.0.1
+
+Package: open-trm
+Architecture: any
+Section: trm
+Priority: extra
+Depends:
+	python-flask,
+	postgresql
+Description: common apache2 settings
