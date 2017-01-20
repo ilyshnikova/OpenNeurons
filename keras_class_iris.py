@@ -5,26 +5,20 @@ import pandas  as pd
 import requests
 import os
 
-features_sql = {
-                    "category_name": '%Iris Attributes',
-                    "feature1": '%feature1',
-                    "feature2": '%feature2',
-                    "feature3": '%feature3',
-                    "feature4": '%feature4'
-               }
-target_sql = {
-                    "category_name": '%Iris Classes',
-                    "target1": '%target1'
-             }
+# change in category.category_name 'Iris Classes' -> 'Iris Targets'
+
+get_instructions_sql = {"category_name": 'Iris Row Data'}
+load_data_sql = {"model_name": '%PERCEPTRON%',
+                 "data_set_name": '%IRIS%'}
 model_args = ({'neurons' : 16, 'input_dim' : 4, 'init' : 'normal', 'activation' : 'relu'},
               {'neurons' : 3, 'input_dim' : 0, 'init' : 'normal', 'activation' : 'sigmoid'})
 compile_args = {'loss': 'categorical_crossentropy',
-                'optimizer' : 'adam',
-                'metrics' : 'accuracy'}
+                'optimizer': 'adam',
+                'metrics': 'accuracy'}
 fit_args = {'nb_epoch': 100,
-            'batch_size' : 1,
-            'verbose' : 0}
-evaluate_args = {'verbose' : 0}
+            'batch_size': 1,
+            'verbose': 0}
+evaluate_args = {'verbose': 0}
 
 class ETL:
     def __init__(self, db_name, user='postgres', host='localhost'):
@@ -64,7 +58,7 @@ etl = ETL(db_name='opentrm')
 conn, meta = etl.get_metadata()
 
 dr = DataReader(connect=conn)
-X, y = dr.get_supervised_training_data(features_sql, target_sql)
+X, y = dr.get_training_data(get_instructions_sql)
 
 train_X, test_X, train_y, test_y = dr.train_test_split(X, y, train_size=0.5, random_state=0)
 train_y_ohe = dr.one_hot_encoder(train_y)
@@ -75,7 +69,7 @@ clf = Classifier(lib_name='keras',
                  model_description='test',
                  model_args = model_args)
 
-clf.fitting(train_X, train_y_ohe,
+clf.fit(train_X, train_y_ohe,
             compile_args = compile_args,
             fit_args = fit_args)
 
