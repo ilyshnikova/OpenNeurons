@@ -1,8 +1,12 @@
+import datetime
+import os
 import pandas as pd
 import requests
-import os
+import lxml
 
 from sqlalchemy import create_engine
+from zeep import Client
+
 
 class ETL:
     def __init__(self, db_name, user='postgres', host='localhost'):
@@ -21,23 +25,17 @@ class ETL:
         elif extension == 'xlsx':
             data = pd.read_excel(path, sheetname=2)
         data.to_sql(table_name, self.engine, if_exists='append')
-        os.remove('path')
 
     def get_table(self, table_name):
         return pd.read_sql_table(table_name, self.engine)
     
-    def get_cb_data(self, url, path):
-        '''
-        XML is a tree-like structure, while a Pandas DataFrame
-        is a 2D table-like structure. So there is no automatic way
-        to convert between the two. You have to understand the XML
-        structure and know how you want to map its data onto a 2D table,
-        so now, when we don't know which xml is needed we would return it
-        as text and save to file
-        '''
+    def get_bicurbase(self, start : datetime.datetime, end : datetime.datetime):
+        client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
+        resp = client.service.BiCurBase(datetime.datetime(2016, 10, 18, 0, 0, 0, 0), datetime.datetime.today())
         
-        r = requests.get(url)
-        with open(path, 'w') as file:
-            file.write(r.text)
-            
-        return r.text
+        header = ['D0', 'VAL']
+        table = []
+        for tbl in resp['_value_1'].getchildren()[0].xpath('//BCB'):
+            row = [tbl.xpath(col)[0].text for col in header]
+            table.append(row)
+        return pd.DataFrame(table, columns=header)
