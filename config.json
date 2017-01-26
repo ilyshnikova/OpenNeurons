@@ -1,0 +1,12 @@
+{
+	"database": {
+		"user": "postgres",
+		"host": "localhost",
+		"db_name": "trmdb",
+		"password": "postgres"
+	},
+	"server": {
+		"host": "::",
+		"port": "5001"
+	}
+}
