@@ -1,8 +1,22 @@
-from .connector     import Connector
 from sqlalchemy     import text
+from sqlalchemy     import create_engine
 
 import pandas as pd
 import numpy as np
+
+
+class Connector:
+    def __init__(self, db_name, user='postgres', host='localhost'):
+        self.user = user
+        self.host = host
+        self.db_name = db_name
+        self.engine = create_engine(
+            'postgresql://{user}@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name),
+            echo=True
+        )
+
+    def get_engine(self):
+        return self.engine
 
 
 class Reader:
@@ -15,13 +29,13 @@ class Reader:
         attributes_sql_raw = \
             text("""
                   select rh.tag as tag,
-                         rh.value_double as double_val,
-                         rh.value_char as char_val
+                         rh.rates_value_double as double_val,
+                         rh.rates_value_char as char_val
                     from rates_history rh
                       join rates r
-                        on rh.rates_id = r.id
+                        on rh.rates_id = r.rates_id
                       join category c
-                        on r.category_id = c.id
+                        on r.category_category_id = c.category_id
                   where c.name = :category_name
             """)
 
@@ -30,8 +44,8 @@ class Reader:
                   select r.name
                     from rates r
                       join category c
-                        on r.category_id = c.id
-                  where c.name = :category_name
+                        on r.category_category_id = c.category_id
+                  where c.category_name = :category_name
                  """)
 
         raw_data = pd.DataFrame(self.engine.execute(attributes_sql_raw, instruction).fetchall())
@@ -130,90 +144,5 @@ class Reader:
 
         dic = {k: g["val_double"].tolist() for k, g in targets.groupby("id")}
         y = pd.DataFrame.from_dict(dic).T
-
-        return X, y
-
-    def iris_data(self, instruction):
-        attributes_sql_raw = \
-            text("""
-                  with cat_id as (
-                      SELECT child.category_id as c_id
-                        from category child
-                          left join category as parent
-                                 on child.parent_category_id = parent.category_id
-                      where parent.category_name = :category_name
-                        and child.category_name like '%Attributes%')
-
-                  select rh.tag as tag,
-                       rh.rates_value_double as double_val,
-                       rh.rates_value_char as char_val
-                    from rates_history rh
-                      join rates r
-                        on rh.rates_id = r.rates_id
-                      join cat_id c
-                        on r.category_category_id = c.c_id
-            """)
-
-        features_names = \
-            text("""
-                  with cat_id as (
-                      SELECT child.category_id as c_id
-                        from category child
-                   left join category as parent
-                          on child.parent_category_id = parent.category_id
-                       where parent.category_name = :category_name
-                         and child.category_name like '%Attributes%')
-
-                  select r.rates_name
-                    from rates r
-                      join cat_id c
-                        on r.category_category_id = c.c_id
-
-                 """)
-
-        features = pd.DataFrame(
-            self.engine.execute(attributes_sql_raw, instruction).fetchall()
-        )
-        columns = ['id', 'val_double', 'val_char']
-        features.columns = columns
-
-        appended_data = []
-        for i in columns[1:]:
-            dict = {k: g[i].tolist() for k, g in features.groupby("id")}
-            appended_data.append(pd.DataFrame.from_dict(dict).T)
-        data = pd.concat(appended_data, axis=1)
-
-        data = data.replace('', np.nan, regex=True)
-        X = data.dropna(axis=1, how='all')
-
-        val_names = list(
-            self.engine.execute(features_names, instruction).fetchall()
-        )
-        val_names = [x[0].encode('utf-8') for x in val_names]
-
-        X.columns = val_names
-
-        targets_sql_raw = \
-            text("""
-                  with cat_id as (
-                      SELECT child.category_id as c_id
-                        from category child
-                          left join category as parent
-                                 on child.parent_category_id = parent.category_id
-                      where parent.category_name = :category_name
-                        and child.category_name like '%Targets%')
-
-                  select rh.rates_value_double as double_val
-                    from rates_history rh
-                      join rates r
-                        on rh.rates_id = r.rates_id
-                      join cat_id c
-                        on r.category_category_id = c.c_id
-                 """)
-
-        targets = pd.DataFrame(
-            self.engine.execute(targets_sql_raw, instruction).fetchall()
-        )
-        y = np.array(targets[0], dtype=str)
 
         return X, y
