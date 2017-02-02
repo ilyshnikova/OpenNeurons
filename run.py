@@ -1,4 +1,4 @@
-from wrapper.wrapper          import KerasClassifier
+from wrapper.kerasclassifier          import KerasClassifier
 from manager.reader                   import Reader
 
 from sklearn.model_selection          import train_test_split
@@ -29,18 +29,18 @@ predict_args = {}
 ##### user's code #####
 # X = X.as_matrix()
 # train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.7, random_state=42)
-# train_y_ohe = n.array(get_dummies(train_y))
+# train_y_ohe = np.array(get_dummies(train_y))
 # test_y_ohe = np.array(get_dummies(test_y))
 #######################
 
 # Simple Example
-# with load model from storage
 #
 # m = KerasClassifier(name='iris', args=build_args)
 # m.fit(train_X, train_y_ohe, fit_args=fit_args)
-#loss, accuracy = m.evaluate(test_X, test_y_ohe, evaluate_args)
+# loss, accuracy = m.evaluate(test_X, test_y_ohe, evaluate_args)
 # prediction = m.predict(train_X)
 # print(loss)
+# print("/n")
 # print(prediction)
 
 # Read dataset
