@@ -45,11 +45,10 @@ predict_args = {}
 
 # Read dataset
 #
-# X_l, y_l = rd.get_dataset(instruction=load_data_sql)
+# X_l = rd.get_dataset(instruction=load_data_sql)
 
 ##### user's code #####
 # X_l = X_l.as_matrix()
-# y_l = y_l.as_matrix()
 #######################
 
 

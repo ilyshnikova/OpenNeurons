@@ -117,32 +117,4 @@ class Reader:
         val_names = [x[0].encode('utf-8') for x in val_names]
         X.columns = val_names
 
-        target_sql_raw = \
-            text("""
-                  select dsv.vector_id as id,
-                         dsv.data_set_value as features
-                    from data_set_values as dsv
-                      join data_set_component dsc
-                        on dsv.component_id = dsc.component_id
-                      join data_set ds
-                        on dsc.data_set_id = ds.data_set_id
-                      join model_2_data_set mds
-                        on ds.data_set_id = mds.data_set_id
-                      join model m
-                        on mds.model_id = m.model_id
-                  where m.model_name like :model_name
-                    and ds.data_set_name like :data_set_name
-                    and dsc.component_type = 'O'
-
-                  """)
-
-        targets = pd.DataFrame(
-            self.engine.execute(target_sql_raw, instruction).fetchall()
-        )
-        columns = ['id', 'val_double']
-        targets.columns = columns
-
-        dic = {k: g["val_double"].tolist() for k, g in targets.groupby("id")}
-        y = pd.DataFrame.from_dict(dic).T
-
-        return X, y
+        return X
