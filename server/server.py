@@ -3,7 +3,7 @@
 from flask import Flask, send_from_directory, render_template, request
 import json
 import os
-import json
+from helpers import *
 
 from sqlalchemy import *
 
@@ -20,13 +20,23 @@ def add_default_values(elements, request):
 with open('../config.json') as data_file:
         config = json.load(data_file)
 
-engine = create_engine('postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=config['database']['user'], host=config['database']['host'], db_name=config['database']['db_name']))
+engine = create_engine(
+    'postgresql://{user}:postgres@{host}:5432/{db_name}'.format(
+        user=config['database']['user'],
+        host=config['database']['host'],
+        db_name=config['database']['db_name']
+    )
+)
 
 conn = engine.connect()
 
 metadata = MetaData(engine)
 
 models_table = Table('model', metadata, autoload=True)
+models_2_data_table = Table('model_2_data_set', metadata, autoload=True)
+dataset_table = Table('data_set', metadata, autoload=True)
+dataset_comp_table = Table('data_set_component', metadata, autoload=True)
+dataset_values_table = Table('data_set_values', metadata, autoload=True)
 
 
 @app.route('/files/<path:path>')
@@ -58,14 +68,8 @@ def ok():
 
 @app.route('/models')
 def show_models():
-    s = select([models_table])
-    result = conn.execute(s)
-    options = []
 
-    for row in result:
-        print row
-        options += [{'title': 'Data analysing model : "' + str(row['model_name']) + '"', 'id': str(int(row['model_id']))}]
-
+    options = get_models_pretty_list(engine, conn, models_table)
     print options
 
     elements = [
@@ -80,26 +84,13 @@ def show_models():
     return_url="/"
 
     if request.args.get('result'):
-        s = select([models_table]).where(models_table.c.model_id == request.args.get('models'))
-        result = conn.execute(s).__iter__().next()
+        (model_info, datasets) = get_model_info(engine, conn, request.args.get('models'), models_table, models_2_data_table, dataset_table)
 
         return render_template(
-            "output.html",
+            "models.html",
             elements=add_default_values(elements, request),
-            output_elements=[
-                {
-                    'title' : 'Model name',
-                    'value' : result['model_name']
-                },
-                {
-                    'title' : 'Description',
-                    'value' : result['description'],
-                },
-                {
-                    'title' : 'Model type',
-                    'value' : result['model_type']
-                },
-            ],
+            model_desc=model_info,
+            datasets=datasets,
             return_url=return_url,
         )
     else:
@@ -109,6 +100,20 @@ def show_models():
             return_url=return_url,
         )
 
+@app.route('/dataset')
+def show_dataset():
+
+    return_url="/models?models=%s&result=1" % request.args.get('models')
+
+    (head, dataset) = get_dataset(engine, conn, request.args.get('id'), dataset_comp_table, dataset_values_table)
+
+    return render_template(
+        "dataset.html",
+        table=dataset,
+        name=request.args.get('name'),
+        head=head,
+        return_url=return_url,
+    )
 
 
 if __name__ == "__main__":
