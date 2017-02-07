@@ -5,7 +5,7 @@ import lxml
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from zeep import Client
-from models.models import *
+from models.models import Base, Category, Rates, RatesHistory, Source
 
 
 class ETL:
@@ -17,10 +17,9 @@ class ETL:
             'postgresql://{user}@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name),
             echo=True
         )
-        Base.metadata.create_all(self.engine)
         self.session = sessionmaker(bind=self.engine)()
 
-    def get_or_create(self, model, kwargs):
+    def __get_or_create(self, model, kwargs):
         instance = self.session.query(model).filter_by(**kwargs).first()
         if instance:
             return instance
@@ -29,52 +28,52 @@ class ETL:
             self.session.add(instance)
             return self.session.query(model).filter_by(**kwargs).one()
 
-    def convert_date(self, date):
+    def __convert_date(self, inp_date):
         try:
-            return datetime.datetime.strptime(date, '%Y%m')
+            return datetime.datetime.strptime(inp_date, '%Y%m')
         except:
-            return datetime.datetime.strptime(date, '%Y%m%d')
+            return datetime.datetime.strptime(inp_date, '%Y%m%d')
 
     def write_to_db(self, path, category: Category):
         try:
             rates = []
             rates_history = []
             extension = path.split('.')[-1]
-            source = self.get_or_create(
+            source = self.__get_or_create(
                 Source,
                 {'name': path.split('/')[-1]}
             )
             if extension == 'csv':
                 data = pd.read_csv(path, encoding="ISO-8859-1", header=2)
                 for _, row in data.iterrows():
-                    rate = self.get_or_create(
+                    rate = self.__get_or_create(
                         Rates,
                         {'name': row['Issue Name'], 'category_id': category.id,
-                         'source_id': source.id, 'tag': str(row['Issue Code'])}
+                         'source_id': source.id, 'tag': 'rb'}
                     )
                     rate_history = RatesHistory(
                         rates_id=rate.id,
-                        date=self.convert_date(str(row['Contract Month'])),
-                        value_double=row['Interest Rate'],
-                        value_char=str(row['Underlying Index']),
-                        tag=row['Underlying Name']
+                        date=self.__convert_date(str(row['Contract Month'])),
+                        value_double=row['Underlying Index'],
+                        value_char=str(row['Interest Rate']) + str(row['Underlying Name']),
+                        tag='rb'
                     )
                     rates.append(rate)
                     rates_history.append(rate_history)
             elif extension == 'xlsx':
                 data = pd.read_excel(path, sheetname=2)
                 for _, row in data.iterrows():
-                    rate = self.get_or_create(
+                    rate = self.__get_or_create(
                         Rates,
-                        {'name': 'kospi_item', 'category_id' :category.id,
-                         'source_id': source.id, 'tag': str(row['fRIC'])}
+                        {'name': 'kospi_item', 'category_id': category.id,
+                         'source_id': source.id, 'tag': 'kospi option'}
                     )
                     rate_history = RatesHistory(
                         rates_id=rate.id,
                         date=row['DATE1'],
                         value_double=row['STRIKE'],
-                        value_char=str(row['cRIC']),
-                        tag=row['fRIC']
+                        value_char='opt' ,
+                        tag='kospi option'
                     )
                     rates.append(rate)
                     rates_history.append(rate_history)
@@ -93,9 +92,9 @@ class ETL:
             category = self.session.query(Category).filter(Category.name == 'CBRF').one()
             source = Source(name='cbr.ru/DailyInfoWebServ/DailyInfo')
             self.session.add(source)
-            rate = self.get_or_create(
+            rate = self.__get_or_create(
                 Rates,
-                {'name': 'bivalcur', 'category_id': category.id, 'source_id': source.id, 'tag': 'BiCur'}
+                {'name': 'bivalcur', 'category_id': category.id, 'source_id': source.id, 'tag': 'bivalcur'}
             )
             rates_history = []
             header = ['D0', 'VAL']
@@ -106,7 +105,7 @@ class ETL:
                         rates_id=rate.id,
                         date=datetime.datetime.strptime(row[0].split('T', 1)[0], '%Y-%m-%d'),
                         value_double=row[1],
-                        value_char='Nothing to put here',
+                        value_char='bicurbase' + str(datetime.datetime.strptime(row[0].split('T', 1)[0], '%Y-%m-%d')),
                         tag='bicurbase'
                     )
                 )
@@ -119,7 +118,7 @@ class ETL:
 '''
 example of usage
 
-
+Base.metadata.create_all(self.engine)
 etl = ETL(db_name='opentrm')
 categories = [
     Category(name='NIKKEI', description='nikkei category'),
