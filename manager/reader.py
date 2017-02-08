@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+from models.models import Base
 import pandas as pd
 import numpy as np
 
@@ -16,6 +16,7 @@ class DBManager:
             echo=True
         )
         self.session = sessionmaker(bind=self.engine)()
+        Base.metadata.create_all(self.engine)
 
     def get_raw_data(self, instruction):
 
