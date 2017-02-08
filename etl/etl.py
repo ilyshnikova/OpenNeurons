@@ -43,37 +43,52 @@ class ETL:
                 Source,
                 {'name': path.split('/')[-1]}
             )
+            futures_id = self.session.query(Category.id).filter(Category.name == 'futures').first()
+            call_id = self.session.query(Category.id).filter(Category.name == 'call').first()
+            put_id = self.session.query(Category.id).filter(Category.name == 'put').first()
             if extension == 'csv':
                 data = pd.read_csv(path, encoding="ISO-8859-1", header=2)
+
+                tag = {None: [futures_id, 'futures'],
+                       'CAL': [call_id, 'call'],
+                       'PUT': [put_id, 'put']}
+
                 for _, row in data.iterrows():
                     rate = self.__get_or_create(
                         Rates,
-                        {'name': row['Issue Name'], 'category_id': category.id,
-                         'source_id': source.id, 'tag': 'rb'}
+                        {'name': row['Underlying Name'], 'category_id': tag[row['Put^Call']][0],
+                         'source_id': source.id, 'tag': tag[row['Put^Call']][1]}
                     )
                     rate_history = RatesHistory(
                         rates_id=rate.id,
                         date=self.__convert_date(str(row['Contract Month'])),
-                        value_double=row['Underlying Index'],
-                        value_char=str(row['Interest Rate']) + str(row['Underlying Name']),
-                        tag='rb'
+                        ask_price=row['Settlement Price'],
+                        strike=row['Strike Price'],
+                        rates_value=row['Underlying Index'],
+                        volatility=row['Volatility '],
+                        tag=tag[row['Put^Call']]
                     )
                     rates.append(rate)
                     rates_history.append(rate_history)
             elif extension == 'xlsx':
                 data = pd.read_excel(path, sheetname=2)
                 for _, row in data.iterrows():
+                    cat = [(futures_id, 'futures') if row['fSTL_V'] else
+                                (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')]
                     rate = self.__get_or_create(
                         Rates,
-                        {'name': 'kospi_item', 'category_id': category.id,
-                         'source_id': source.id, 'tag': 'kospi option'}
+                        {'name': 'kospi', 'category_id': cat[0],
+                         'source_id': source.id, 'tag': cat[1]}
                     )
                     rate_history = RatesHistory(
                         rates_id=rate.id,
                         date=row['DATE1'],
-                        value_double=row['STRIKE'],
-                        value_char='opt' ,
-                        tag='kospi option'
+                        ask_price=row.get(cat[1][0] + 'ASK_V', None),
+                        strike=row['Strike'],
+                        rates_value=row[cat[1][0] + 'STL_V'],
+                        volatility=row.get(cat[1][0] + 'BID_V', None),
+                        tag=cat[1]
+
                     )
                     rates.append(rate)
                     rates_history.append(rate_history)
@@ -92,9 +107,10 @@ class ETL:
             category = self.session.query(Category).filter(Category.name == 'CBRF').one()
             source = Source(name='cbr.ru/DailyInfoWebServ/DailyInfo')
             self.session.add(source)
+            cbr_id = self.session.query(Category.id).filter(Category.name == 'cbr').first()
             rate = self.__get_or_create(
                 Rates,
-                {'name': 'bivalcur', 'category_id': category.id, 'source_id': source.id, 'tag': 'bivalcur'}
+                {'name': 'bivalcur', 'category_id': cbr_id, 'source_id': source.id, 'tag': 'bivalcur'}
             )
             rates_history = []
             header = ['D0', 'VAL']
@@ -104,8 +120,7 @@ class ETL:
                     RatesHistory(
                         rates_id=rate.id,
                         date=datetime.datetime.strptime(row[0].split('T', 1)[0], '%Y-%m-%d'),
-                        value_double=row[1],
-                        value_char='bicurbase' + str(datetime.datetime.strptime(row[0].split('T', 1)[0], '%Y-%m-%d')),
+                        strike=row[1],
                         tag='bicurbase'
                     )
                 )
@@ -114,23 +129,3 @@ class ETL:
         except Exception as e:
             self.session.rollback()
             raise e
-
-'''
-example of usage
-
-Base.metadata.create_all(self.engine)
-etl = ETL(db_name='opentrm')
-categories = [
-    Category(name='NIKKEI', description='nikkei category'),
-    Category(name='KOSPI', description='kospi category'),
-    Category(name='CBRF', description='cbrf_data')
-]
-etl.session.add_all(categories)
-etl.session.commit()
-
-etl.load_bicurbase(datetime.datetime(2016, 10, 18, 0, 0, 0, 0), datetime.datetime.today())
-bivalcur_rate = etl.session.query(Rates).filter(Rates.name == 'bivalcur').one()
-etl.session.query(RatesHistory.date, RatesHistory.value_double).filter(RatesHistory.rates_id == bivalcur_rate.id).all()
-etl.write_to_db('rb_e20161027.txt.csv', etl.session.query(Category).filter(Category.name == 'CBRF').one())
-
-'''

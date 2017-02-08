@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 
-class Reader:
+class DBManager:
     def __init__(self, db_name, user='postgres', host='localhost'):
         self.user = user
         self.host = host
