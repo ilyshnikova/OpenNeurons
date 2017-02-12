@@ -5,12 +5,9 @@ class KerasClassifier(Classifier):
     def __init__(self, name, **kwargs):
         super().__init__(self, name, approach='keras')
         self.keras = __import__(self.approach)
-        if kwargs:
-            self.build_args = kwargs['build_args']
-            self.compile_args = kwargs['compile_args']
-            self.model = self.build_model()
-        else:
-            self.loaded_model = self.load_model()
+        self.build_args = kwargs.get('build_args')
+        self.compile_args = kwargs.get('compile_args')
+        self.model = self.build_model() if kwargs else self.load_model()
 
     def save_model(self):
         mod_name = self.name + '.h5'
@@ -44,7 +41,7 @@ class KerasClassifier(Classifier):
         return loss, accuracy
 
     def predict(self, X):
-        return self.load_model().predict_classes(X)
+        return self.model.predict_classes(X)
 
 
 
