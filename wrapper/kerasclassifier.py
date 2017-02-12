@@ -36,8 +36,7 @@ class KerasClassifier(Classifier):
         self.save_model()
 
     def evaluate(self, X, y, evaluate_args: 'keys: verbose'):
-        loaded_model = self.load_model()
-        loss, accuracy = loaded_model.evaluate(X, y, **evaluate_args)
+        loss, accuracy = self.model.evaluate(X, y, **evaluate_args)
         return loss, accuracy
 
     def predict(self, X):
