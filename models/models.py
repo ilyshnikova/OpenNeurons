@@ -54,10 +54,8 @@ class Source(Base):
 class RatesHistory(Base):
     rates_id = Column(Integer, Sequence('rates_history_id_seq'), ForeignKey('rates.id'), primary_key=True)
     date = Column(Date, primary_key=True)
-    ask_price = Column(Float, nullable=True)
-    strike = Column(Float)
-    rates_value = Column(Float, nullable=True)
-    volatility = Column(Float, nullable=True)
+    float_value = Column(Float)
+    string_value = Column(String(STRLEN), nullable=True)
     tag = Column(String(STRLEN))
 
 
