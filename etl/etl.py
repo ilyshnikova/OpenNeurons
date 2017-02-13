@@ -27,7 +27,7 @@ class ETL:
         except:
             return datetime.datetime.strptime(inp_date, '%Y%m%d')
 
-    def load_csv(self, path, category: Category):
+    def load_csv(self, path):
         try:
             rates = []
             rates_history = []
@@ -67,7 +67,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def load_excel(self, path, category: Category):
+    def load_excel(self, path):
         try:
             rates = []
             rates_history = []
@@ -112,7 +112,6 @@ class ETL:
         try:
             client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
             resp = client.service.BiCurBase(start, end)
-            category = self.manager.session.query(Category).filter(Category.name == 'CBRF').one()
             source = Source(name='cbr.ru/DailyInfoWebServ/DailyInfo')
             self.manager.session.add(source)
             cbr_id = self.manager.session.query(Category.id).filter(Category.name == 'cbr').first()
