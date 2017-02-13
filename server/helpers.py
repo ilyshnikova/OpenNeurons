@@ -24,6 +24,9 @@ def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dat
     dataset_list = []
     model_info = []
 
+    if models is None:
+        return ([],[])
+
     for model in models:
         model_info = [{
                 'title' : 'Model name',
@@ -40,13 +43,18 @@ def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dat
         s = select([dataset_table]).where(dataset_table.c.data_set_id == model.data_set_id)
         data_set = conn.execute(s).first()
 
-        dataset_list.append(
-            [{
-                'title' : 'Dataset name',
-                'value' : data_set.data_set_name,
-                'keywords': "id=%d&models=%d&name=%s" % (data_set.data_set_id, model.model_id, data_set.data_set_name),
-            }]
-        )
+        if data_set is not None:
+            dataset_list.append(
+                [{
+                    # for template
+                    'title' : 'Dataset name',
+                    'value' : data_set.data_set_name,
+                    'keywords': "id=%d&models=%d&name=%s" % (data_set.data_set_id, model.model_id, data_set.data_set_name),
+                    # additional info
+                    'id': data_set.data_set_id,
+                    'name': data_set.data_set_name,
+                }]
+            )
 
     return (model_info, dataset_list)
 
@@ -84,3 +92,55 @@ def get_dataset(engine, conn, dataset_id, dataset_comp_table, dataset_values_tab
     table = np.array(table).transpose().tolist()
 
     return (head, table)
+
+
+def get_all_dataset_for_model(engine, conn, model_id, models_table, model_2_data_table, dataset_table, checked_datasets=[]):
+    datasets = []
+
+    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
+
+    for ds in models_datasets:
+        ds = ds[0]
+        checked_datasets.append(str(ds['id']))
+
+    s = select([dataset_table])
+    dss = conn.execute(s)
+    for ds in dss:
+        datasets.append({
+            'id': ds.data_set_id,
+            'name': ds.data_set_name,
+            'checked' : 1 if str(ds.data_set_id) in checked_datasets else 0,
+        })
+    print(datasets)
+    return datasets, checked_datasets
+
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def add_datasets_to_model(engine, conn, model_id, model_2_data_table, datasets):
+    data_to_insert = []
+
+#    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
+#
+#    models_dataset_list = []
+#    for ds in models_datasets:
+#        ds = ds[0]
+#        models_dataset_list.append(str(ds['id']))
+#
+#    to_delete = []
+#    to_insert = []
+#
+#    for ds in dataset_table
+#
+#
+#    for el in datasets:
+#        if RepresentsInt(el):
+#            data_to_insert.append({'data_set_id': el, 'model_id': model_id})
+#
+#    if len(data_to_insert):
+#        ins = insert(model_2_data_table).values(data_to_insert).on_conflict_do_nothing(index_elements=['data_set_id','model_id'])
+#        conn.execute(ins)

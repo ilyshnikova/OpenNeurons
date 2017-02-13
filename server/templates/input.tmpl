@@ -40,12 +40,13 @@
 				</div>
 			{% endif %}
 		{% endfor %}
-		<input type=hidden name=result value=1 />
+		<input type=hidden name=result value={{result if result != None else 1}} />
         <br>
-		<button type="submit" class="btn btn-default">Отправить</button>
+		<button type="submit" class="btn btn-default" id=submit_button >Отправить</button>
 		{% if return_url %}
 			<button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
 		{% endif %}
+        <input type=hidden name="datasets_ids" value={{ datasets_ids if datasets_ids != None else ""}} id="datasets_ids"/>
 	</div>
 </form>
 

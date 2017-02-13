@@ -53,6 +53,10 @@ def ok():
                 'href' : '/models',
             },
             {
+                'title': 'Модель -> выборка',
+                'href': '/chose_dataset'
+            },
+            {
                 'title' : 'Просмотр лингвистических переменных',
                 'href' : '/ling-vars',
                 'disabled' : True,
@@ -69,6 +73,7 @@ def ok():
 @app.route('/models')
 def show_models():
 
+#    import pdb; pdb.set_trace()
     options = get_models_pretty_list(engine, conn, models_table)
     print options
 
@@ -114,6 +119,60 @@ def show_dataset():
         head=head,
         return_url=return_url,
     )
+
+
+@app.route('/chose_dataset')
+def show_chose_dataset():
+    return_url="/"
+
+    options = get_models_pretty_list(engine, conn, models_table)
+
+    elements = [
+        {
+            'title': 'Модели',
+            'id': 'models',
+            'type' : 'choice',
+            'options' : options,
+            'default': options[0]['id'],
+        },
+    ]
+
+    if request.args.get('result') == '1':
+        (datasets, checked_datasets) = get_all_dataset_for_model(engine, conn, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+
+        return render_template(
+            "checkbox_list.html",
+            elements=add_default_values(elements, request),
+            return_url=return_url,
+            cb_list=datasets,
+            datasets_ids=','.join(checked_datasets),
+            result=2,
+        )
+    elif request.args.get('result') == '2':
+        (datasets, checked_datasets) = get_all_dataset_for_model(
+            engine, conn,
+            request.args.get('models'),
+            models_table, models_2_data_table, dataset_table,
+            request.args.get('datasets_ids').split(','))
+
+        add_datasets_to_model(engine, conn, request.args.get('models'), models_2_data_table, request.args.get('datasets_ids').split(','))
+        return render_template(
+            "checkbox_list.html",
+            return_url=return_url,
+            elements=add_default_values(elements, request),
+            cb_list=datasets,
+            datasets_ids=','.join(checked_datasets),
+            result=2,
+        )
+
+    else:
+        return render_template(
+            "input.html",
+            elements=elements,
+            result=1,
+            return_url=return_url,
+        )
+
 
 
 if __name__ == "__main__":
