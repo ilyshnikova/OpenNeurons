@@ -140,7 +140,6 @@ def add_datasets_to_model(engine, conn, model_id, models_table, model_2_data_tab
         if RepresentsInt(ds) and not ds in models_dataset_list:
             to_insert.append({'data_set_id': ds, 'model_id': model_id})
 
-    import pdb; pdb.set_trace()
     if len(to_delete):
         session = sessionmaker(bind=engine)()
         ds = session.query(model_2_data_table).filter(model_2_data_table.c.model_id == model_id, model_2_data_table.c.data_set_id.in_(to_delete)).all()

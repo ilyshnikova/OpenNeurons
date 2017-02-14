@@ -73,7 +73,6 @@ def ok():
 @app.route('/models')
 def show_models():
 
-#    import pdb; pdb.set_trace()
     options = get_models_pretty_list(engine, conn, models_table)
     print options
 
