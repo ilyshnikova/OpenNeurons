@@ -12,7 +12,7 @@ class ETL:
     def __init__(self, manager: DBManager):
         self.manager = manager
 
-    def __get_or_create(self, model, kwargs):
+    def __get_or_create(self, model, **kwargs):
         instance = self.manager.session.query(model).filter_by(**kwargs).first()
         if instance:
             return instance
@@ -33,7 +33,7 @@ class ETL:
             rates_history = []
             source = self.__get_or_create(
                 Source,
-                {'name': path.split('/')[-1]}
+                name=path.split('/')[-1]
             )
             futures_id = self.manager.session.query(Category.id).filter(Category.name == 'futures').first()
             call_id = self.manager.session.query(Category.id).filter(Category.name == 'call').first()
@@ -48,8 +48,10 @@ class ETL:
             for _, row in data.iterrows():
                 rate = self.__get_or_create(
                     Rates,
-                    {'name': row['Underlying Name'], 'category_id': tag[row['Put^Call']][0],
-                     'source_id': source.id, 'tag': tag[row['Put^Call']][1]}
+                    name=row['Underlying Name'],
+                    category_id=tag[row['Put^Call']][0],
+                    source_id=source.id,
+                    tag=tag[row['Put^Call']][1]
                 )
                 rate_history = RatesHistory(
                     rates_id=rate.id,
@@ -73,7 +75,7 @@ class ETL:
             rates_history = []
             source = self.__get_or_create(
                 Source,
-                {'name': path.split('/')[-1]}
+                name=path.split('/')[-1]
             )
             futures_id = self.manager.session.query(Category.id).filter(Category.name == 'futures').first()
             call_id = self.manager.session.query(Category.id).filter(Category.name == 'call').first()
@@ -85,8 +87,10 @@ class ETL:
                             (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')]
                 rate = self.__get_or_create(
                     Rates,
-                    {'name': 'kospi', 'category_id': cat[0],
-                     'source_id': source.id, 'tag': cat[1]}
+                    name='kospi',
+                    category_id=cat[0],
+                    source_id=source.id,
+                    tag=cat[1]
                 )
                 rate_history = RatesHistory(
                     rates_id=rate.id,
@@ -112,12 +116,14 @@ class ETL:
         try:
             client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
             resp = client.service.BiCurBase(start, end)
-            source = Source(name='cbr.ru/DailyInfoWebServ/DailyInfo')
-            self.manager.session.add(source)
+            source = self.__get_or_create(Source, name='cbr.ru/DailyInfoWebServ/DailyInfo')
             cbr_id = self.manager.session.query(Category.id).filter(Category.name == 'cbr').first()
             rate = self.__get_or_create(
                 Rates,
-                {'name': 'bivalcur', 'category_id': cbr_id, 'source_id': source.id, 'tag': 'bivalcur'}
+                name='bivalcur', 
+                category_id=cbr_id,
+                source_id=source.id,
+                tag='bivalcur'
             )
             rates_history = []
             header = ['D0', 'VAL']
