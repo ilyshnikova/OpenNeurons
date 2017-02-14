@@ -155,7 +155,7 @@ def show_chose_dataset():
             models_table, models_2_data_table, dataset_table,
             request.args.get('datasets_ids').split(','))
 
-        add_datasets_to_model(engine, conn, request.args.get('models'), models_2_data_table, request.args.get('datasets_ids').split(','))
+        add_datasets_to_model(engine, conn, request.args.get('models'), models_table, models_2_data_table, dataset_table, request.args.get('datasets_ids').split(','))
         return render_template(
             "checkbox_list.html",
             return_url=return_url,

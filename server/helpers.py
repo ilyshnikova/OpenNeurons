@@ -20,7 +20,7 @@ def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dat
             join(model_2_data_table, model_2_data_table.c.model_id == models_table.c.model_id).\
             filter(models_table.c.model_id == model_id)
 
-#    import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     dataset_list = []
     model_info = []
 
@@ -121,26 +121,31 @@ def RepresentsInt(s):
     except ValueError:
         return False
 
-def add_datasets_to_model(engine, conn, model_id, model_2_data_table, datasets):
+def add_datasets_to_model(engine, conn, model_id, models_table, model_2_data_table, dataset_table, datasets):
     data_to_insert = []
 
-#    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
-#
-#    models_dataset_list = []
-#    for ds in models_datasets:
-#        ds = ds[0]
-#        models_dataset_list.append(str(ds['id']))
-#
-#    to_delete = []
-#    to_insert = []
-#
-#    for ds in dataset_table
-#
-#
-#    for el in datasets:
-#        if RepresentsInt(el):
-#            data_to_insert.append({'data_set_id': el, 'model_id': model_id})
-#
-#    if len(data_to_insert):
-#        ins = insert(model_2_data_table).values(data_to_insert).on_conflict_do_nothing(index_elements=['data_set_id','model_id'])
-#        conn.execute(ins)
+    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
+
+    to_delete = []
+    to_insert = []
+    models_dataset_list = []
+
+    for ds in models_datasets:
+        ds = ds[0]
+        if not str(ds['id']) in datasets:
+            to_delete.append(int(ds['id']))
+        models_dataset_list.append(str(ds['id']))
+
+    for ds in datasets:
+        if RepresentsInt(ds) and not ds in models_dataset_list:
+            to_insert.append({'data_set_id': ds, 'model_id': model_id})
+
+    import pdb; pdb.set_trace()
+    if len(to_delete):
+        session = sessionmaker(bind=engine)()
+        ds = session.query(model_2_data_table).filter(model_2_data_table.c.model_id == model_id, model_2_data_table.c.data_set_id.in_(to_delete)).all()
+#        session.delete(ds)
+
+    if len(to_insert):
+        ins = insert(model_2_data_table).values(to_insert)
+        conn.execute(ins)
