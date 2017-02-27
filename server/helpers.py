@@ -3,9 +3,9 @@ from sqlalchemy import *
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 
-def get_models_pretty_list(engine, conn, table):
+def get_models_pretty_list(base, table):
     s = select([table])
-    result = conn.execute(s)
+    result = base.conn.execute(s)
     models = []
 
     for row in result:
@@ -14,13 +14,12 @@ def get_models_pretty_list(engine, conn, table):
     return models
 
 
-def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table):
-    session = sessionmaker(bind=engine)()
+def get_model_info(base, model_id, models_table, model_2_data_table, dataset_table):
+    session = sessionmaker(bind=base.engine)()
     models = session.query(models_table, model_2_data_table).\
             join(model_2_data_table, model_2_data_table.c.model_id == models_table.c.model_id).\
             filter(models_table.c.model_id == model_id)
 
-    import pdb; pdb.set_trace()
     dataset_list = []
     model_info = []
 
@@ -41,7 +40,7 @@ def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dat
             }]
 
         s = select([dataset_table]).where(dataset_table.c.data_set_id == model.data_set_id)
-        data_set = conn.execute(s).first()
+        data_set = base.conn.execute(s).first()
 
         if data_set is not None:
             dataset_list.append(
@@ -59,9 +58,9 @@ def get_model_info(engine, conn, model_id, models_table, model_2_data_table, dat
     return (model_info, dataset_list)
 
 
-def get_dataset(engine, conn, dataset_id, dataset_comp_table, dataset_values_table):
+def get_dataset(base, dataset_id, dataset_comp_table, dataset_values_table):
     s = select([dataset_comp_table]).where(dataset_comp_table.c.data_set_id == dataset_id).order_by(dataset_comp_table.c.component_id)
-    dataset_comps = conn.execute(s)
+    dataset_comps = base.conn.execute(s)
 
     head = []
     table = []
@@ -71,7 +70,7 @@ def get_dataset(engine, conn, dataset_id, dataset_comp_table, dataset_values_tab
                 where(dataset_values_table.c.data_set_id == dataset_id).\
                 where(dataset_values_table.c.component_id == comp.component_id).\
                 order_by(dataset_values_table.c.vector_id)
-        vector = conn.execute(s)
+        vector = base.conn.execute(s)
 
         col = []
         prev_vect_id = 0
@@ -94,17 +93,17 @@ def get_dataset(engine, conn, dataset_id, dataset_comp_table, dataset_values_tab
     return (head, table)
 
 
-def get_all_dataset_for_model(engine, conn, model_id, models_table, model_2_data_table, dataset_table, checked_datasets=[]):
+def get_all_dataset_for_model(base, model_id, models_table, model_2_data_table, dataset_table, checked_datasets=[]):
     datasets = []
 
-    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
+    models_datasets = get_model_info(base, model_id, models_table, model_2_data_table, dataset_table)[1];
 
     for ds in models_datasets:
         ds = ds[0]
         checked_datasets.append(str(ds['id']))
 
     s = select([dataset_table])
-    dss = conn.execute(s)
+    dss = base.conn.execute(s)
     for ds in dss:
         datasets.append({
             'id': ds.data_set_id,
@@ -121,10 +120,10 @@ def RepresentsInt(s):
     except ValueError:
         return False
 
-def add_datasets_to_model(engine, conn, model_id, models_table, model_2_data_table, dataset_table, datasets):
+def add_datasets_to_model(base, model_id, models_table, model_2_data_table, dataset_table, datasets):
     data_to_insert = []
 
-    models_datasets = get_model_info(engine, conn, model_id, models_table, model_2_data_table, dataset_table)[1];
+    models_datasets = get_model_info(base, model_id, models_table, model_2_data_table, dataset_table)[1];
 
     to_delete = []
     to_insert = []
@@ -141,10 +140,10 @@ def add_datasets_to_model(engine, conn, model_id, models_table, model_2_data_tab
             to_insert.append({'data_set_id': ds, 'model_id': model_id})
 
     if len(to_delete):
-        session = sessionmaker(bind=engine)()
+        session = sessionmaker(bind=base.engine)()
         ds = session.query(model_2_data_table).filter(model_2_data_table.c.model_id == model_id, model_2_data_table.c.data_set_id.in_(to_delete)).all()
 #        session.delete(ds)
 
     if len(to_insert):
         ins = insert(model_2_data_table).values(to_insert)
-        conn.execute(ins)
+        base.conn.execute(ins)

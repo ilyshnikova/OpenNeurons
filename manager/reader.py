@@ -12,7 +12,7 @@ class DBManager:
         self.host = host
         self.db_name = db_name
         self.engine = create_engine(
-            'postgresql://{user}@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name),
+            'postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name),
             echo=True
         )
         self.session = sessionmaker(bind=self.engine)()
