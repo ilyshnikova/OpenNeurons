@@ -1,11 +1,12 @@
-from sqlalchemy     import text
-from sqlalchemy     import create_engine
-
+from sqlalchemy import text
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models.models import Base
 import pandas as pd
 import numpy as np
 
 
-class Connector:
+class DBManager:
     def __init__(self, db_name, user='postgres', host='localhost'):
         self.user = user
         self.host = host
@@ -14,15 +15,8 @@ class Connector:
             'postgresql://{user}@{host}:5432/{db_name}'.format(user=user, host=host, db_name=db_name),
             echo=True
         )
-
-    def get_engine(self):
-        return self.engine
-
-
-class Reader:
-    def __init__(self, name):
-        connector = Connector(name)
-        self.engine = connector.get_engine()
+        self.session = sessionmaker(bind=self.engine)()
+        Base.metadata.create_all(self.engine)
 
     def get_raw_data(self, instruction):
 

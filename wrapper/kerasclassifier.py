@@ -1,25 +1,13 @@
-from .inheritance import Model
 from .inheritance import Classifier
 
 
 class KerasClassifier(Classifier):
-
-    def __init__(self, name=None, args=None):
-        if name is None:
-            raise TypeError("Specify model's name")
-
-        Model.__init__(self, name, approach='keras')
-        self.keras = self.get_library()
-
-        if args is None:
-            self.loaded_model = self.load_model()
-        else:
-            self.build_args = args['build_args']
-            self.compile_args = args['compile_args']
-            self.build_model()
-
-    def get_library(self):
-        return __import__(self.approach)
+    def __init__(self, name, **kwargs):
+        super().__init__(self, name, approach='keras')
+        self.keras = __import__(self.approach)
+        self.build_args = kwargs.get('build_args')
+        self.compile_args = kwargs.get('compile_args')
+        self.model = self.build_model() if kwargs else self.load_model()
 
     def save_model(self):
         mod_name = self.name + '.h5'
@@ -32,45 +20,27 @@ class KerasClassifier(Classifier):
     def build_model(self):
         model = self.keras.models.Sequential()
 
-
-        for i in range(len(self.build_args)):
+        for arg in self.build_args:
             model.add(self.keras.layers.Dense(
-                self.build_args[i]['neurons'],
-                input_dim=self.build_args[i]['input_dim'],
-                init=self.build_args[i]['init'],
-                activation=self.build_args[i]['activation']
+                arg['neurons'],
+                input_dim=arg['input_dim'],
+                init=arg['init'],
+                activation=arg['activation']
             ))
 
-        model.compile(optimizer=self.compile_args['optimizer'],
-                      loss=self.compile_args['loss'],
-                      metrics=[self.compile_args['metrics']])
+        model.compile(**self.compile_args)
+        return model
 
-        self.model = model
-
-    def fit(self, X, y, fit_args):
-
-        self.model.fit(X, y,
-                       nb_epoch=fit_args['nb_epoch'],
-                       batch_size=fit_args['batch_size'],
-                       verbose=fit_args['verbose'])
-
+    def fit(self, X, y, fit_args: 'keys: nb_epoch, batch_size and verbose'):
+        self.model.fit(X, y, **fit_args)
         self.save_model()
 
-    def evaluate(self, X, y, evaluate_args):
-
-        loaded_model = self.load_model()
-
-        loss, accuracy = loaded_model.evaluate(X, y,
-                                               verbose=evaluate_args['verbose'])
-        return (loss, accuracy)
+    def evaluate(self, X, y, evaluate_args: 'keys: verbose'):
+        loss, accuracy = self.model.evaluate(X, y, **evaluate_args)
+        return loss, accuracy
 
     def predict(self, X):
-
-        loaded_model = self.load_model()
-
-        prediction = loaded_model.predict_classes(X)
-
-        return prediction
+        return self.model.predict_classes(X)
 
 
 
