@@ -13,12 +13,13 @@ class Base:
 
     @declared_attr
     def id(cls):
-        return Column(Integer, Sequence(cls.__name__.lower() + 'id_seq'), primary_key=True)
+        return Column(Integer, Sequence(cls.__name__.lower() + '_id_seq'), primary_key=True)
 
 Base = declarative_base(cls=Base)
 
 
 class Category(Base):
+    id = Column(Integer, Sequence('category_id_seq'), primary_key=True)
     name = Column(String(STRLEN))
     description = Column(String(STRLEN))
     parent_id = Column(Integer, ForeignKey('category.id'), nullable=True)
@@ -87,7 +88,13 @@ class Model2Dataset(Base):
 
 
 class DataSetComponent(Base):
-    dataset_id = Column(Integer, Sequence('datasetcomponent_id_seq'), ForeignKey('dataset.id'), primary_key=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), primary_key=True)
     component_type = Column(String(STRLEN))
     component_index = Column(Integer)
     component_name = Column(String(STRLEN))
+
+
+class DataSetValues(Base):
+    component_id = Column(Integer, ForeignKey('datasetcomponent.id'), primary_key=True)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'), primary_key=True)
+    value = Column(Float)

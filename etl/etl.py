@@ -19,6 +19,7 @@ class ETL:
         else:
             instance = model(**kwargs)
             self.manager.session.add(instance)
+            self.manager.session.commit()
             return self.manager.session.query(model).filter_by(**kwargs).one()
 
     def __convert_date(self, inp_date):
@@ -27,7 +28,7 @@ class ETL:
         except:
             return datetime.datetime.strptime(inp_date, '%Y%m%d')
 
-    def load_csv(self, path):
+    def get_JapanExchange_Derivatives_ex2(self, path):
         try:
             rates = []
             rates_history = []
@@ -41,17 +42,23 @@ class ETL:
 
             data = pd.read_csv(path, encoding="ISO-8859-1", header=2)
 
-            tag = {None: [futures_id, 'futures'],
+            tag = {'FUT': [futures_id, 'futures'],
                    'CAL': [call_id, 'call'],
                    'PUT': [put_id, 'put']}
 
             for _, row in data.iterrows():
+                # in python only nan is not equal to itself
+                if row['Put^Call'] != row['Put^Call']:
+                    row['Put^Call'] = 'FUT'
+                if row['Underlying Name'] != row['Underlying Name']:
+                    row['Underlying Name'] = 'unnamed'
+
                 rate = self.__get_or_create(
                     Rates,
                     name=row['Underlying Name'],
-                    category_id=tag[row['Put^Call']][0],
+                    category_id=tag[row['Put^Call']][0],
                     source_id=source.id,
-                    tag=tag[row['Put^Call']][1]
+                    tag=tag[row['Put^Call']][1]
                 )
                 rate_history = RatesHistory(
                     rates_id=rate.id,
@@ -60,7 +67,7 @@ class ETL:
                     string_value='Settlement Price: ' + str(row['Settlement Price']) +
                                  ' Volatility: ' + str(row['Volatility ']) +
                                  ' Underlying index: ' + str(row['Underlying Index']),
-                    tag=tag[row['Put^Call']]
+                    tag=tag[row['Put^Call']][1]
                 )
                 rates.append(rate)
                 rates_history.append(rate_history)
@@ -69,7 +76,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def load_excel(self, path):
+    def get_Kospi_ex1(self, path):
         try:
             rates = []
             rates_history = []
@@ -83,8 +90,7 @@ class ETL:
 
             data = pd.read_excel(path, sheetname=2)
             for _, row in data.iterrows():
-                cat = [(futures_id, 'futures') if row['fSTL_V'] else
-                            (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')]
+                cat = (futures_id, 'futures') if row['fSTL_V'] else (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')
                 rate = self.__get_or_create(
                     Rates,
                     name='kospi',
@@ -95,7 +101,7 @@ class ETL:
                 rate_history = RatesHistory(
                     rates_id=rate.id,
                     date=row['DATE1'],
-                    float_value=row['Strike'],
+                    float_value=row['STRIKE'],
                     string_value=cat[1][0] + 'ASK_V: ' + str(row.get(cat[1][0] + 'ASK_V', None)) +
                                  ' ' + cat[1][0] + 'STL_V: ' + str(row[cat[1][0] + 'STL_V']) +
                                  ' ' + cat[1][0] + 'BID_V: ' + str(row.get(cat[1][0] + 'BID_V', None)),
@@ -112,7 +118,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def load_bicurbase(self, start: datetime.datetime, end: datetime.datetime):
+    def get_CBR_ex3(self, start: datetime.datetime, end: datetime.datetime):
         try:
             client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
             resp = client.service.BiCurBase(start, end)
@@ -142,3 +148,22 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
+
+'''
+#example of usage
+
+if __name__ == '__main__':
+    from manager.reader import DBManager
+    from models.models import *
+    import datetime
+    manager = DBManager('opentrm')
+    cats = [Category(name='futures', description='azaza'),
+            Category(name='call', description='azaza'),
+            Category(name='put', description='azaza'),
+            Category(name='cbr', description='azaza')]
+    manager.session.add_all(cats)
+    etl = ETL(manager=manager)
+    etl.get_Kospi_ex1('../Kospi Quotes Eikon Loader.xlsx')
+    etl.get_JapanExchange_Derivatives_ex2('../rb_e20161027.txt.csv')
+    etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
+'''
