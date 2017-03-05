@@ -2,12 +2,12 @@ from .inheritance import Classifier
 
 
 class KerasClassifier(Classifier):
-    def __init__(self, name, **kwargs):
-        super().__init__(self, name, approach='keras')
+    def __init__(self, name, args):
+        super().__init__(name, approach='keras')
         self.keras = __import__(self.approach)
-        self.build_args = kwargs.get('build_args')
-        self.compile_args = kwargs.get('compile_args')
-        self.model = self.build_model() if kwargs else self.load_model()
+        self.build_args = args['build_args']
+        self.compile_args = args['compile_args']
+        self.model = self.build_model() if args else self.load_model()
 
     def save_model(self):
         mod_name = self.name + '.h5'
@@ -19,6 +19,7 @@ class KerasClassifier(Classifier):
 
     def build_model(self):
         model = self.keras.models.Sequential()
+        print(self.build_args)
 
         for arg in self.build_args:
             model.add(self.keras.layers.Dense(
@@ -28,7 +29,9 @@ class KerasClassifier(Classifier):
                 activation=arg['activation']
             ))
 
-        model.compile(**self.compile_args)
+        model.compile(optimizer=self.compile_args['optimizer'],
+                      loss=self.compile_args['loss'],
+                      metrics=[self.compile_args['metrics']])
         return model
 
     def fit(self, X, y, fit_args: 'keys: nb_epoch, batch_size and verbose'):

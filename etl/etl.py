@@ -1,12 +1,12 @@
 import datetime
 import pandas as pd
 import lxml
+import numpy as np
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from zeep import Client
-from models.models import Base, Category, Rates, RatesHistory, Source
-from manager.reader import DBManager
+from manager.dbmanager  import DBManager
+from models.models      import *
+from zeep               import Client
+
 
 class ETL:
     def __init__(self, manager: DBManager):
@@ -19,6 +19,7 @@ class ETL:
         else:
             instance = model(**kwargs)
             self.manager.session.add(instance)
+            self.manager.session.commit()
             return self.manager.session.query(model).filter_by(**kwargs).one()
 
     def __convert_date(self, inp_date):
@@ -27,7 +28,64 @@ class ETL:
         except:
             return datetime.datetime.strptime(inp_date, '%Y%m%d')
 
-    def load_csv(self, path):
+    def load_supervised_data(self, path, ctg_name):
+        try:
+            source = self.__get_or_create(
+                Source,
+                name=path.split('/')[-1]
+            )
+
+            category_prnt = self.__get_or_create(
+                Category,
+                name=ctg_name,
+                description='test'
+            )
+
+            category_attr = self.__get_or_create(
+                Category,
+                name=ctg_name + ' Attributes',
+                description='Attributes of ' + ctg_name,
+                parent_id=category_prnt.id
+            )
+
+            category_cls = self.__get_or_create(
+                Category,
+                name=ctg_name + ' Classes',
+                description='Classes of ' + ctg_name,
+                parent_id=category_prnt.id
+            )
+
+            data = pd.read_csv(path, encoding="ISO-8859-1")
+            columns = data.columns.values
+            columns[-1] = 'target'
+            data.columns = columns
+
+            rates_history = []
+            for name in data.columns.values:
+                rate_f = self.__get_or_create(
+                    Rates,
+                    name=name,
+                    category_id=category_cls.id if name == 'target' else category_attr.id,
+                    source_id=source.id,
+                    tag='test')
+
+                for idx in range(data.shape[0]):
+                    value = data.get_value(idx, name)
+                    rh = RatesHistory(
+                        rates_id=rate_f.id,
+                        float_value=value if isinstance(value, (int, float)) else np.NaN,
+                        string_value=value if isinstance(value, str) else '',
+                        tag=int(idx))
+                    rates_history.append(rh)
+
+            self.manager.session.add_all(rates_history)
+            self.manager.session.commit()
+
+        except Exception as e:
+            self.manager.session.rollback()
+            raise e
+
+    def get_JapanExchange_Derivatives_ex2(self, path):
         try:
             rates = []
             rates_history = []
@@ -41,11 +99,17 @@ class ETL:
 
             data = pd.read_csv(path, encoding="ISO-8859-1", header=2)
 
-            tag = {None: [futures_id, 'futures'],
+            tag = {'FUT': [futures_id, 'futures'],
                    'CAL': [call_id, 'call'],
                    'PUT': [put_id, 'put']}
 
             for _, row in data.iterrows():
+                # in python only nan is not equal to itself
+                if row['Put^Call'] != row['Put^Call']:
+                    row['Put^Call'] = 'FUT'
+                if row['Underlying Name'] != row['Underlying Name']:
+                    row['Underlying Name'] = 'unnamed'
+
                 rate = self.__get_or_create(
                     Rates,
                     name=row['Underlying Name'],
@@ -60,7 +124,7 @@ class ETL:
                     string_value='Settlement Price: ' + str(row['Settlement Price']) +
                                  ' Volatility: ' + str(row['Volatility ']) +
                                  ' Underlying index: ' + str(row['Underlying Index']),
-                    tag=tag[row['Put^Call']]
+                    tag=tag[row['Put^Call']][1]
                 )
                 rates.append(rate)
                 rates_history.append(rate_history)
@@ -69,7 +133,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def load_excel(self, path):
+    def get_Kospi_ex1(self, path):
         try:
             rates = []
             rates_history = []
@@ -83,8 +147,7 @@ class ETL:
 
             data = pd.read_excel(path, sheetname=2)
             for _, row in data.iterrows():
-                cat = [(futures_id, 'futures') if row['fSTL_V'] else
-                            (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')]
+                cat = (futures_id, 'futures') if row['fSTL_V'] else (call_id, 'call') if row['cSTL_V'] else (put_id, 'put')
                 rate = self.__get_or_create(
                     Rates,
                     name='kospi',
@@ -95,7 +158,7 @@ class ETL:
                 rate_history = RatesHistory(
                     rates_id=rate.id,
                     date=row['DATE1'],
-                    float_value=row['Strike'],
+                    float_value=row['STRIKE'],
                     string_value=cat[1][0] + 'ASK_V: ' + str(row.get(cat[1][0] + 'ASK_V', None)) +
                                  ' ' + cat[1][0] + 'STL_V: ' + str(row[cat[1][0] + 'STL_V']) +
                                  ' ' + cat[1][0] + 'BID_V: ' + str(row.get(cat[1][0] + 'BID_V', None)),
@@ -112,7 +175,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def load_bicurbase(self, start: datetime.datetime, end: datetime.datetime):
+    def get_CBR_ex3(self, start: datetime.datetime, end: datetime.datetime):
         try:
             client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
             resp = client.service.BiCurBase(start, end)
@@ -120,7 +183,7 @@ class ETL:
             cbr_id = self.manager.session.query(Category.id).filter(Category.name == 'cbr').first()
             rate = self.__get_or_create(
                 Rates,
-                name='bivalcur', 
+                name='bivalcur',
                 category_id=cbr_id,
                 source_id=source.id,
                 tag='bivalcur'
