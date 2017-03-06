@@ -1,4 +1,4 @@
-from sqlalchemy.orm import relationship, backref
+﻿from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
@@ -64,7 +64,7 @@ class Model(Base):
     model_name = Column(String(STRLEN))
     description = Column(String(STRLEN))
     model_type = Column(String(STRLEN))
-    model2dataset = rates = relationship(
+    model2dataset = relationship(
         'Model2Dataset',
         backref=backref('model')
     )
