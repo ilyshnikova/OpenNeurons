@@ -1,4 +1,4 @@
-from sqlalchemy.orm import relationship, backref
+﻿from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
