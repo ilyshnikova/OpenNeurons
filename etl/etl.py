@@ -19,7 +19,6 @@ class ETL:
         else:
             instance = model(**kwargs)
             self.manager.session.add(instance)
-            self.manager.session.commit()
             return self.manager.session.query(model).filter_by(**kwargs).one()
 
     def __convert_date(self, inp_date):
@@ -205,3 +204,21 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
+
+'''
+#example of usage
+if __name__ == '__main__':
+    from manager.reader import DBManager
+    from models.models import *
+    import datetime
+    manager = DBManager('opentrm')
+    cats = [Category(name='futures', description='azaza'),
+            Category(name='call', description='azaza'),
+            Category(name='put', description='azaza'),
+            Category(name='cbr', description='azaza')]
+    manager.session.add_all(cats)
+    etl = ETL(manager=manager)
+    etl.get_Kospi_ex1('../Kospi Quotes Eikon Loader.xlsx')
+    etl.get_JapanExchange_Derivatives_ex2('../rb_e20161027.txt.csv')
+    etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
+'''

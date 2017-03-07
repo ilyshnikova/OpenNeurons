@@ -63,10 +63,10 @@ def show_models():
     options = []
 
     for row in result:
-        print row
+        print(row)
         options += [{'title': 'Data analysing model : "' + str(row['model_name']) + '"', 'id': str(int(row['model_id']))}]
 
-    print options
+    print(options)
 
     elements = [
         {
