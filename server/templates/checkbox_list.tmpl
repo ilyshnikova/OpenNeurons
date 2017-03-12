@@ -1,0 +1,14 @@
+<script src="/files/js/checkbox.js"> </script>
+
+<div style="text-align:left" type="submit">
+    {% for cb in cb_list %}
+        {% if cb.checked%}
+            <input type="checkbox" value="check" id={{cb.id}} name={{cb.name}} onchange="FillCheckBox(this)" checked/>
+        {% else %}
+            <input type="checkbox" value="check" id={{cb.id}} name={{cb.name}} onchange="FillCheckBox(this)"/>
+        {% endif %}
+        <label for={{cb.id}}>
+        {{cb.name}}
+        </label> <br/>
+    {% endfor %}
+</div>

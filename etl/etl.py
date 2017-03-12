@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 import pandas as pd
 import lxml
 import numpy as np
@@ -206,12 +206,7 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-'''
-#example of usage
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/master
 if __name__ == '__main__':
     from manager.reader import DBManager
     from models.models import *
@@ -226,8 +221,3 @@ if __name__ == '__main__':
     etl.get_Kospi_ex1('../Kospi Quotes Eikon Loader.xlsx')
     etl.get_JapanExchange_Derivatives_ex2('../rb_e20161027.txt.csv')
     etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
-<<<<<<< HEAD
-'''
-=======
-'''
->>>>>>> origin/master

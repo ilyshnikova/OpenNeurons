@@ -1,0 +1,21 @@
+<div style="text-align:center">
+
+	{% for element in model_desc %}
+			<div class="input-group">
+				<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+				<input type="text" class="form-control" value="{{element.value}}" readonly />
+			</div>
+	{% endfor %}
+
+    <br><br>
+
+    {% for block in datasets %}
+	    {% for element in block: %}
+		    <div class="input-group">
+			    <span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+				<a class="form-control" href="/dataset?{{element.keywords}}"> {{element.value}} </a>
+		    </div>
+        {% endfor%}
+        <br><br<br>
+	{% endfor %}
+</div>
