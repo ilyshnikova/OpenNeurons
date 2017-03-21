@@ -3,9 +3,13 @@
 from flask import Flask, send_from_directory, render_template, request
 import json
 import os
-import json
+from helpers import *
 
 from sqlalchemy import *
+
+import sys
+
+from manager.reader import *
 
 app = Flask(__name__)
 
@@ -17,16 +21,21 @@ def add_default_values(elements, request):
 
     return elements
 
-with open('../config.json') as data_file:
+with open('config.json') as data_file:
         config = json.load(data_file)
 
-engine = create_engine('postgresql://{user}:postgres@{host}:5432/{db_name}'.format(user=config['database']['user'], host=config['database']['host'], db_name=config['database']['db_name']))
+base = DBManager(
+    db_name=config['database']['db_name'],
+    user=config['database']['user'],
+    host=config['database']['host'],
+)
 
-conn = engine.connect()
-
-metadata = MetaData(engine)
 
 models_table = Table('model', metadata, autoload=True)
+models_2_data_table = Table('model_2_data_set', metadata, autoload=True)
+dataset_table = Table('data_set', metadata, autoload=True)
+dataset_comp_table = Table('data_set_component', metadata, autoload=True)
+dataset_values_table = Table('data_set_values', metadata, autoload=True)
 
 
 @app.route('/files/<path:path>')
@@ -41,6 +50,10 @@ def ok():
             {
                 'title' : 'Просмотр моделей',
                 'href' : '/models',
+            },
+            {
+                'title': 'Модель -> выборка',
+                'href': '/chose_dataset'
             },
             {
                 'title' : 'Просмотр лингвистических переменных',
@@ -58,14 +71,8 @@ def ok():
 
 @app.route('/models')
 def show_models():
-    s = select([models_table])
-    result = conn.execute(s)
-    options = []
 
-    for row in result:
-        print(row)
-        options += [{'title': 'Data analysing model : "' + str(row['model_name']) + '"', 'id': str(int(row['model_id']))}]
-
+    options = get_models_pretty_list(base, models_table)
     print(options)
 
     elements = [
@@ -80,32 +87,87 @@ def show_models():
     return_url="/"
 
     if request.args.get('result'):
-        s = select([models_table]).where(models_table.c.model_id == request.args.get('models'))
-        result = conn.execute(s).__iter__().next()
+        (model_info, datasets) = get_model_info(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
 
         return render_template(
-            "output.html",
+            "models.html",
             elements=add_default_values(elements, request),
-            output_elements=[
-                {
-                    'title' : 'Model name',
-                    'value' : result['model_name']
-                },
-                {
-                    'title' : 'Description',
-                    'value' : result['description'],
-                },
-                {
-                    'title' : 'Model type',
-                    'value' : result['model_type']
-                },
-            ],
+            model_desc=model_info,
+            datasets=datasets,
             return_url=return_url,
         )
     else:
         return render_template(
             "input.html",
             elements=elements,
+            return_url=return_url,
+        )
+
+@app.route('/dataset')
+def show_dataset():
+
+    return_url="/models?models=%s&result=1" % request.args.get('models')
+
+    (head, dataset) = get_dataset(base, request.args.get('id'), dataset_comp_table, dataset_values_table)
+
+    return render_template(
+        "dataset.html",
+        table=dataset,
+        name=request.args.get('name'),
+        head=head,
+        return_url=return_url,
+    )
+
+
+@app.route('/chose_dataset')
+def show_chose_dataset():
+    return_url="/"
+
+    options = get_models_pretty_list(base, models_table)
+
+    elements = [
+        {
+            'title': 'Модели',
+            'id': 'models',
+            'type' : 'choice',
+            'options' : options,
+            'default': options[0]['id'],
+        },
+    ]
+
+    if request.args.get('result') == '1':
+        (datasets, checked_datasets) = get_all_dataset_for_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+
+        return render_template(
+            "checkbox_list.html",
+            elements=add_default_values(elements, request),
+            return_url=return_url,
+            cb_list=datasets,
+            datasets_ids=','.join(checked_datasets),
+            result=2,
+        )
+    elif request.args.get('result') == '2':
+        (datasets, checked_datasets) = get_all_dataset_for_model(
+            base,
+            request.args.get('models'),
+            models_table, models_2_data_table, dataset_table,
+            request.args.get('datasets_ids').split(','))
+
+        add_datasets_to_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table, request.args.get('datasets_ids').split(','))
+        return render_template(
+            "checkbox_list.html",
+            return_url=return_url,
+            elements=add_default_values(elements, request),
+            cb_list=datasets,
+            datasets_ids=','.join(checked_datasets),
+            result=2,
+        )
+
+    else:
+        return render_template(
+            "input.html",
+            elements=elements,
+            result=1,
             return_url=return_url,
         )
 

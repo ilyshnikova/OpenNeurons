@@ -1,4 +1,4 @@
-﻿from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
@@ -23,41 +23,41 @@ class Category(Base):
     name = Column(String(STRLEN))
     description = Column(String(STRLEN))
     parent_id = Column(Integer, ForeignKey('category.id'), nullable=True)
-    children = relationship(
+    category_parent = relationship(
         'Category',
         backref=backref('parent', remote_side=[id])
     )
-    rates = relationship(
-        'Rates',
-        backref=backref('category')
-    )
+
 
 
 class Rates(Base):
+    id = Column(Integer, Sequence('rates_id_seq'), primary_key=True)
     name = Column(String(STRLEN))
     category_id = Column(Integer, ForeignKey('category.id'))
     source_id = Column(Integer, ForeignKey('source.id'))
-    tag = Column(String(STRLEN))
-    rates_history = relationship(
-        'RatesHistory',
-        backref=backref('rates')
-    )
+    source = relationship(
+        'Source',
+        backref=backref('source'))
+    tag = Column(String(), nullable=True)
+    category = relationship(
+        'Category',
+        backref=backref('category'))
+
 
 
 class Source(Base):
+    id = Column(Integer, Sequence('source_id_seq'), primary_key=True)
     name = Column(String(STRLEN))
-    rates = relationship(
-        'Rates',
-        backref=backref('source')
-    )
-
 
 class RatesHistory(Base):
-    rates_id = Column(Integer, Sequence('rates_history_id_seq'), ForeignKey('rates.id'), primary_key=True)
-    date = Column(Date, nullable=True)#, primary_key=True)
-    float_value = Column(Float)
-    string_value = Column(String(STRLEN), nullable=True)
-    tag = Column(Integer)
+    rates_id = Column(Integer, ForeignKey('rates.id'))
+    date = Column(Date, nullable=True)
+    float_value = Column(Float, nullable=True)
+    string_value = Column(String(), nullable=True)
+    tag = Column(String(), nullable=True)
+    rates = relationship(
+        'Rates',
+        backref=backref('rates'))
 
 
 class Model(Base):
@@ -100,6 +100,6 @@ class DataSetComponent(Base):
 
 class DataSetValues(Base):
     component_id = Column(Integer, ForeignKey('datasetcomponent.id'), primary_key=True)
-    dataset_id = Column(Integer, ForeignKey('dataset.id'), primary_key=True)
+    dataset_id = Column(Integer, primary_key=True)
     vector_id = Column(Integer, primary_key=True)
     value = Column(Float)

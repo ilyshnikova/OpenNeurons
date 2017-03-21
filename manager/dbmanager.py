@@ -1,11 +1,13 @@
-from sqlalchemy import text, func
+﻿from sqlalchemy import text, func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, aliased, joinedload
 
 from models.models import *
+
 import pandas as pd
 import numpy as np
 import json
+
 
 class DBManager:
     def __init__(self):
@@ -17,195 +19,178 @@ class DBManager:
             echo=True
         ))
         self.session = sessionmaker(bind=self.engine)()
+
         Base.metadata.create_all(self.engine)
 
     def __get_engine_attr(self):
-        with open('../config.json') as data_file:
+        with open('config.json') as data_file:
             config = json.load(data_file)
 
         return {'user': config['database']['user'],
                 'password': config['database']['password'],
                 'host': config['database']['host'],
-                'db_name': config['database']['db_name']}
+                'db_name': config['database']['db_name']}    
 
     def __get_or_create(self, model, **kwargs):
-        instance = self.session.query(model).filter_by(**kwargs).first()
-        if instance:
-            return instance
+        instance = self.session.query(model).filter_by(**kwargs).all()
+
+        if len(instance) > 1:
+            raise Exception("Multiple return")
+
+        if len(instance) == 1:
+            return instance[0]
         else:
             instance = model(**kwargs)
+
             self.session.add(instance)
-            return self.session.query(model).filter_by(**kwargs).one()
 
-    def get_raw_data(self, rate_name_input):
+            try:
+                result = self.session.query(model).filter_by(**kwargs).one()
+                return result
+            except Exception as e:
+                print(e)
+                return None
 
-        # Get Category
-        # and child Category
-        # : DataFrame
-        query = self.session.query(Category.name)
-        query = query.join(Rates)
-        query = query.filter(Rates.name == rate_name_input)
-        ctg_name = query.subquery('ctg_name')
+    def __get_parent_category(self, childCategory, nestedlevel = 0):
+        # get parent category hierarchy for particular Category (childCategory)
+        if (childCategory.empty)|(nestedlevel >= 250):
+            return childCategory
+        AllCategory = childCategory
+        for parent_id in childCategory['parent_id'].values:
+            if parent_id != None:
+                    prntCategory = aliased(Category)
+                    ParentCategory = pd.DataFrame(self.session.query(Category.id, Category.name, Category.description, Category.parent_id, prntCategory.name.label('parent_name')).\
+                                                  outerjoin(prntCategory, prntCategory.id == Category.parent_id).\
+                                                  filter(Category.id == parent_id.astype(str)).\
+                                                  all())
+                    nestedlevel += 1
+                    ParentCategory = self.__get_parent_category(ParentCategory, nestedlevel)
+                    AllCategory = AllCategory.append(ParentCategory, ignore_index=True)       
+        return AllCategory
 
-        ctg_ch  = aliased(Category)
+    def __set_parent_category(self, dfCategory, category_name = None, nested_level = 0):
+        OutCategory = None
+        if (category_name == None)|(category_name == '')|(nested_level >= 250):
+            return OutCategory
+        for rc in dfCategory[(dfCategory['name']==category_name)][['name', 'description', 'parent_name']].values:
+            OutCategory = self.__get_or_create(Category, name = rc[0], description = rc[1], parent = self.__set_parent_category(dfCategory, rc[2], nested_level+1))
+        return OutCategory
 
-        query   = self.session.query(Category.name, Category.description, Category.parent_id)
-        query   = query.join(ctg_ch.children, aliased=True)
-        query   = query.filter(Category.name == ctg_name.c.name)
-        records = query.all()
+# Example get_raw_data with static data
 
-        ctg_data = pd.DataFrame()
-        for name, description, parent_id in records:
-            ctg_data = ctg_data.append({'name': name, 'description': description, 'parent_id': parent_id},
-                                       ignore_index=True)
+    def get_iris_sample_raw_data(self, RateName = None):
+       Category = None
+       Rates = None
+       RatesHistory = None
+       if RateName == 'X1 (Длина чашелистника)':
+           Category = pd.DataFrame([{'name': 'Iris Row Data', 'description': 'Iris Fisher Row Data'},
+                                    {'name': 'Iris Attributes', 'description': 'Iris Fisher Row Data', 'parent_name': 'Iris Row Data' },
+                                    {'name': 'Iris Classes', 'description': 'Iris Fisher Row Data', 'parent_name': 'Iris Row Data' }],
+                     index=[1, 2, 3])
+           Rates = pd.DataFrame([{'name': 'X1 (Длина чашелистника)', 'category_name': 'Iris Attributes', 'source': 'Manual', 'tag': 'IRIS INPUT'},
+                                  ],
+                           index= [1])
+           RatesHistory = pd.DataFrame([{'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.3, 'string_value': None, 'tag': '1'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.4, 'string_value': None, 'tag': '2'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.4, 'string_value': None, 'tag': '3'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.4, 'string_value': None, 'tag': '4'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.5, 'string_value': None, 'tag': '5'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '6'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '7'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '8'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '9'},
+                                        {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.7, 'string_value': None, 'tag': '10'}])
+       return [Category, Rates, RatesHistory]
+    
+    def get_raw_data(self, RateName, CategoryName = None, Tag = None):
+        # seems not to be working with parent depth more than 1 
+        # Category name?? Tag ??
+        ParentCategory = aliased(Category)
 
-        # Get Rates
-        # : DataFrame
-        # Example output:
-        query  = self.session.query(Rates.name, Source.name, Rates.category_id, Rates.tag)
-        query  = query.join(Source)
-        query  = query.filter(Rates.name == rate_name_input)
-        rate = query.first()
+        category = self.session.query(Category.id, Category.name, Category.description, Category.parent_id, ParentCategory.name.label('parent_name')).\
+                                  join(Rates).\
+                                  outerjoin(ParentCategory, ParentCategory.id == Category.parent_id).\
+                                  filter(Rates.name == RateName).\
+                                  all()
 
-        rts_data = pd.DataFrame({'name': rate_name_input, 'source': rate.name, 'category_id': rate.category_id, 'tag': rate.tag},
-                                index=[0])
-        # for r_name, source, cat_id, tag in records:
-        #     rts_data = rts_data.append({'name': r_name, 'source': source, 'category_id': cat_id, 'tag': tag},
-        #                                 ignore_index=True)
+        dfCategory = pd.DataFrame(self.session.query(Category.id, Category.name, Category.description, Category.parent_id, ParentCategory.name.label('parent_name')).\
+                                  join(Rates).\
+                                  outerjoin(ParentCategory, ParentCategory.id == Category.parent_id).\
+                                  filter(Rates.name == RateName).\
+                                  all())
 
-        # Get RatesHistory
-        # : DataFrame
-        query   = self.session.query( RatesHistory.tag, RatesHistory.float_value, RatesHistory.string_value)
-        query   = query.join(Rates)
-        query   = query.filter(Rates.name == rate_name_input)
-        query   = query.order_by(RatesHistory.tag)
-        records = query.all()
+        dfCategory = self.__get_parent_category(dfCategory)
+        
+        dfRates = pd.DataFrame(self.session.query(Rates.id, Rates.name, Rates.category_id, Category.name.label('category_name'), Rates.tag, Source.name.label('source'), Rates.source_id).\
+                               filter(Rates.name == RateName).\
+                               join(Source).\
+                               join(Category).\
+                               all())
 
-        data = pd.DataFrame()
-        for tag, vl1, vl2 in records:
-            data = data.append({'tag': tag, 'float_value': vl1, 'string_value': vl2},
-                               ignore_index=True)
+        dfRatesHistory = pd.DataFrame(self.session.query(RatesHistory.rates_id, Rates.name.label('rates_name'), RatesHistory.date, RatesHistory.float_value, RatesHistory.string_value, RatesHistory.tag).\
+                                      join(Rates).\
+                                      filter(Rates.name == RateName).\
+                                      all())
 
-        # To DataFrame
-        dic = {k: g['float_value'].tolist() for k, g in data.groupby("tag")}
-        float_data = pd.DataFrame.from_dict(dic).T
-        dic = {k: g['string_value'].tolist() for k, g in data.groupby("tag")}
-        str_data = pd.DataFrame.from_dict(dic).T
+        return [dfCategory, dfRates, dfRatesHistory]
 
-        # Concatenate RH_float + RH_str
-        raw_data = pd.concat([float_data, str_data], axis=1)
+    def save_raw_data(self,category, rates, rateshistory, source):
+        NewRawData = []
+        for rrh in rateshistory[['rates_name','date', 'float_value', 'string_value', 'tag']].values:
+            rowc = self.__set_parent_category(dfCategory = category, \
+                                       category_name =  rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
+            rows = self.__get_or_create(Source, \
+                                       name = source)                           
+            rowr = self.__get_or_create(Rates, \
+                                       name = rrh[0], \
+                                       source = rows , \
+                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0], \
+                                       category = rowc)
+            rowrh = self.__get_or_create(RatesHistory, \
+                                        date = rrh[1], \
+                                        float_value = rrh[2], \
+                                        string_value = rrh[3], \
+                                        tag = rrh[4], \
+                                        rates = rowr)
+            NewRawData.append(rowrh)
 
-        # Clean data
-        raw_data = raw_data.replace('', np.nan, regex=True)
-        raw_data = raw_data.dropna(axis=1, how='all')
-
-        # Add columns name
-        query = self.session.query(Rates.name)
-        query = query.filter(Rates.name == rate_name_input)
-        rate_name = query.one()
-
-        raw_data.columns = rate_name
-        return [ctg_data, rts_data, raw_data]
-
-    def save_raw_data(self, category, rates, rateshistory, path):
         try:
-            source = self.__get_or_create(
-                Source,
-                name=path.split('/')[-1]
-            )
-
-            category_prnt = self.__get_or_create(
-                Category,
-                name=category['name'][0],
-                description=category['description'][0],
-            )
-
-            for idx in range(1, category.shape[0]):
-                category_chld = self.__get_or_create(
-                    Category,
-                    name        = category['name'][idx],
-                    description = category['description'][idx],
-                    parent_id   = category['parent_id'][idx]
-                )
-
-            categ = aliased(Category)
-            categ_chd = aliased(Category)
-
-            query  = self.session.query(func.max(RatesHistory.tag))
-            query  = query.join(Rates)
-            query  = query.join(categ_chd)
-            query  = query.join(categ, categ_chd.parent_id == categ.id)
-            query  = query.filter(categ.name == category['name'][0])
-            query  = query.filter(categ_chd.name == category['name'][1])
-            max_id = query.scalar()
-
-            if max_id is None:
-                max_id = 0
-            else:
-                max_id = max_id + 1
-
-            rate_f = self.__get_or_create(
-                Rates,
-                name        = str(rates['name'][0]),
-                category_id = int(rates['category_id'][0]),
-                source_id   = int(source.id),
-                tag         = str(rates['tag'][0])
-            )
-
-            rates_history = []
-            for idx in range(rateshistory.shape[0]):
-                value = rateshistory.get_value(idx, rates['name'][0])
-                rh = RatesHistory(
-                    rates_id     = int(rate_f.id),
-                    float_value  = int(value) if isinstance(value, (int, float)) else np.NaN,
-                    string_value = str(value) if isinstance(value, str) else '',
-                    tag          = int(max_id+idx)
-                )
-                rates_history.append(rh)
-
-            self.session.add_all(rates_history)
+            self.session.add_all(NewRawData)
             self.session.commit()
-
         except Exception as e:
             self.session.rollback()
             raise e
 
-    def save_dataset(self, ft_data, trg_data, model_df, data_set_df):
+    def save_dataset(self, ft_data, trg_data, model_name, dataset_name):
         try:
             model = self.__get_or_create(
                 Model,
-                model_name  = str(model_df['model_name'][0]),
-                description = str(model_df['description'][0]),
-                model_type  = str(model_df['model_type'][0])
+                model_name=model_name,
+                description='test',
+                model_type='K'
             )
-
-            print(model.model_name, model.description, model.model_type)
 
             dataset = self.__get_or_create(
                 DataSet,
-                name = str(data_set_df['name'][0])
+                name=dataset_name
             )
-
-            print(dataset.name)
 
             model2dataset = self.__get_or_create(
                 Model2Dataset,
-                model_id   = model.id,
-                dataset_id = dataset.id
+                model_id=model.id,
+                dataset_id=dataset.id
             )
 
-            query  = self.session.query(func.max(DataSetValues.vector_id))
-            query  = query.join(DataSetComponent)
-            query  = query.join(DataSet)
-            query  = query.filter(DataSet.name==data_set_df['name'][0])
-            max_id = query.scalar()
+            max_id = self.session.query(func.max(DataSetValues.vector_id)).\
+                    join(DataSetComponent). \
+                    join(DataSet) .\
+                    filter(DataSet.name==dataset_name). \
+                    scalar()
 
             if max_id == None:
                 max_id = 0
-            else:
+            if max_id is not None:
                 max_id = max_id + 1
-
-            print(max_id)
 
             datasetvalues = []
             for i in range(ft_data.shape[1]):
@@ -214,7 +199,7 @@ class DBManager:
                     dataset_id=dataset.id,
                     component_type='I',
                     component_index=i + 1,
-                    component_name='X'+str(i+1)
+                    component_name=str('X'+str(i+1))
                 )
                 for idx in range(ft_data.shape[0]):
                     data_val = DataSetValues(
@@ -231,7 +216,7 @@ class DBManager:
                     dataset_id=dataset.id,
                     component_type='O',
                     component_index=i + 1,
-                    component_name='O' + str(i + 1)
+                    component_name=str('O' + str(i + 1))
                 )
                 for idx in range(trg_data.shape[0]):
                     data_val = DataSetValues(
@@ -250,86 +235,51 @@ class DBManager:
             raise e
 
     def get_dataset(self, dataset_name):
+        try:
+            # Get all "component_id" input values
+            out_id = [id[0] for id in self.session.query(DataSetComponent.id).\
+                        join(DataSet).\
+                        filter(DataSet.name == dataset_name).\
+                        filter(DataSetComponent.component_type == 'I').all()]
 
-        # Get all "component_id" input values
-        query = self.session.query(DataSetComponent.id)
-        query = query.join(DataSet)
-        query = query.filter(DataSet.name == dataset_name)
-        query = query.filter(DataSetComponent.component_type == 'I')
-        records = query.all()
-        out_id = [id[0] for id in records]
+            # Get input data
+            # : DataFrame
+            ft_data = pd.DataFrame()
+            for vec_id, val in \
+                    self.session.query(DataSetValues.vector_id, DataSetValues.value).\
+                            filter(DataSetValues.component_id.in_(out_id)).\
+                            order_by(DataSetValues.vector_id):
+                ft_data = ft_data.append({'vec_id': vec_id,
+                                          'val': val},
+                                         ignore_index=True)
 
-        # Get input data
-        # : DataFrame
-        query = self.session.query(DataSetValues.vector_id, DataSetValues.value)
-        query = query.filter(DataSetValues.component_id.in_(out_id))
-        query = query.order_by(DataSetValues.vector_id)
-        records = query.all()
+            dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
+            X = pd.DataFrame.from_dict(dic).T
 
-        ft_data = pd.DataFrame()
-        for vec_id, val in records:
-            ft_data = ft_data.append({'vec_id': vec_id, 'val': val},
-                                     ignore_index=True)
+            # Get all "component_id" output values
+            out_id = [id[0] for id in
+                      self.session.query(DataSetComponent.id). \
+                          join(DataSet). \
+                          filter(DataSet.name == 'Iris data'). \
+                          filter(DataSetComponent.component_type == 'O').all()]
 
-        dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
-        X = pd.DataFrame.from_dict(dic).T
+            # Get output data
+            # : DataFrame
+            ft_data = pd.DataFrame()
+            for vec_id, val in \
+                    self.session.query(DataSetValues.vector_id, DataSetValues.value). \
+                            filter(DataSetValues.component_id.in_(out_id)). \
+                            order_by(DataSetValues.vector_id):
+                ft_data = ft_data.append({'vec_id': vec_id,
+                                          'val': val},
+                                         ignore_index=True)
 
-        # Get all "component_id" output values
-        query = self.session.query(DataSetComponent.id)
-        query = query.join(DataSet)
-        query = query.filter(DataSet.name == dataset_name)
-        query = query.filter(DataSetComponent.component_type == 'O')
-        records = query.all()
-        out_id = [id[0] for id in records]
+            dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
+            y = pd.DataFrame.from_dict(dic).T
 
-        # Get output data
-        # : DataFrame
-        query = self.session.query(DataSetValues.vector_id, DataSetValues.value)
-        query = query.filter(DataSetValues.component_id.in_(out_id))
-        query = query.order_by(DataSetValues.vector_id)
-        records = query.all()
+            return [X, y]
 
-        ft_data = pd.DataFrame()
-        for vec_id, val in records:
-            ft_data = ft_data.append({'vec_id': vec_id, 'val': val},
-                                     ignore_index=True)
-
-        dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
-        y = pd.DataFrame.from_dict(dic).T
-
-        return [X, y]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        except Exception as e:
+            self.session.rollback()
+            raise e
 
