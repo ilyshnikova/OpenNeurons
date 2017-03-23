@@ -8,12 +8,14 @@ from models.models import *
 from manager.dbmanager import DBManager
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-# from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 
 from io import StringIO
 import os
+
+import quandl as qu
 
 class ETL:
     def __init__(self, manager: DBManager):
@@ -52,11 +54,11 @@ class ETL:
         
         # 3. Init DataFrames = Category, Rates, RatesHistory before data insertion ( for Options and Futures)
         Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
-                        {'name': 'Asia', 'description': 'Asia', 'parent_name': 'Financial Markets' },
-                        {'name': 'Korea', 'description': 'Korea', 'parent_name': 'Asia' },
-                        {'name': 'KRX', 'description': 'Korea Stock Exchange', 'parent_name': 'Korea' },
-                        {'name': 'KRX Derivatives', 'description': 'KRX Derivatives', 'parent_name': 'KRX' },
-                        ])
+                                 {'name': 'Asia', 'description': 'Asia', 'parent_name': 'Financial Markets' },
+                                 {'name': 'Korea', 'description': 'Korea', 'parent_name': 'Asia' },
+                                 {'name': 'KRX', 'description': 'Korea Stock Exchange', 'parent_name': 'Korea' },
+                                 {'name': 'KRX Derivatives', 'description': 'KRX Derivatives', 'parent_name': 'KRX' },
+                                 ])
         Rates = pd.DataFrame()
         RatesHistory = pd.DataFrame()
         
@@ -67,7 +69,7 @@ class ETL:
         # 5. Import KOSPI Futures prices into Category, Rates, RatesHisory
         for row in FuturesData[['DATE1', 'YEAR', 'MONTH', 'fSTL_V']].values:
           Category = Category.append([{'name': 'KOSPI FUT Y:{}'.format(row[1]), 'description': 'KOSPI FUTURES YEAR: {}'.format(row[1]), 'parent_name': 'KOSPI Futures' },
-                                                     {'name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI FUTURES {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI FUT Y:{}'.format(row[1])}])
+                                      {'name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI FUTURES {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI FUT Y:{}'.format(row[1])}])
           Rates = Rates.append([{'name': 'FUTSPriceKOSPI({}/{})'.format(row[2], row[1]), 'category_name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'tag': 'KOSPI FUT {}/{}'.format(row[2], row[1]), 'source' : Source}])
           RatesHistory = RatesHistory.append([{'rates_name': 'FUTSPriceKOSPI({}/{})'.format(row[2], row[1]), 'date': row[0], 'float_value' : row[3], 'string_value' : None, 'tag': 'KOSPI FUT {}/{} price date: {}'.format(row[2], row[1], row[0])}])
         
@@ -78,8 +80,8 @@ class ETL:
         # 7. Import KOSPI Options prices into Category, Rates, RatesHisory
         for row in OptionsData[['DATE1', 'YEAR', 'MONTH', 'STRIKE',  'cBID_V', 'cASK_V', 'cSTL_V', 'pBID_V', 'pASK_V', 'pSTL_V']].values:
             Category = Category.append([{'name': 'KOSPI OPT Y:{}'.format(row[1]), 'description': 'KOSPI OPTIONS YEAR: {}'.format(row[1]), 'parent_name': 'KOSPI Options' },
-                                                       {'name': 'KOSPI OPT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI OPTIONS {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI OPT Y:{}'.format(row[1])},
-                                                       {'name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'description': 'KOSPI OPTIONS {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'parent_name': 'KOSPI OPT {}/{}'.format(row[2],row[1])},])
+                                        {'name': 'KOSPI OPT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI OPTIONS {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI OPT Y:{}'.format(row[1])},
+                                        {'name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'description': 'KOSPI OPTIONS {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'parent_name': 'KOSPI OPT {}/{}'.format(row[2],row[1])},])
             Rates = Rates.append([{'name': 'OptPriceCallBid({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} BID PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
                                    {'name': 'OptPriceCallAsk({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} ASK PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
                                    {'name': 'OptPriceCallSetl({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} SETTLEMENT PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
@@ -218,6 +220,24 @@ class ETL:
             DBManager.save_raw_data(Category, Rates, RatesHistory)
             #return (Category, Rates, RatesHistory)
 
+    def get_quandl_data(self, Category, ticket, start, end=str(datetime.datetime.today()), collapse='monthly', Source='quandl', SaveToDB=True):
+
+        dfData = pd.DataFrame(qu.get(ticket, start=start, end=end, collapse=collapse, returns="numpy"))
+
+        Rates = pd.DataFrame()
+        RatesHistory = pd.DataFrame()
+
+        trg_category = Category['name'].iloc[-1:].values[0]
+
+        for rate in dfData.columns.values[1:]:
+            Rates = Rates.append({'name': trg_category + "_" + rate, 'category_name': trg_category, 'tag': None}, ignore_index=True)
+            for idx in range(dfData.shape[0]):
+                RatesHistory = RatesHistory.append({'rates_name': trg_category + "_" + rate, 'date': dfData['Date'][idx], 'float_value': dfData[rate][idx], 'string_value': None,'tag': None}, ignore_index=True)
+
+        if SaveToDB:
+            self.manager.save_raw_data(Category, Rates, RatesHistory, Source)
+        return [Category, Rates, RatesHistory]
+
 #IL would be better to have this stuff as 'get_IrisFisher_Data'
     def load_supervised_data(self, path, ctg_name):
         try:
@@ -275,6 +295,7 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
+
 '''
 #example of usage
 

@@ -50,20 +50,32 @@ if __name__ == '__main__':
     # etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
     # etl.load_supervised_data(path=path, ctg_name=load_data_instr["category_name"])
 
+    # Init Category before data insert
+    # Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
+    #                          {'name': 'Europe', 'description': 'Europe', 'parent_name': 'Financial Markets'},
+    #                          {'name': 'Russia', 'description': 'Russia', 'parent_name': 'Europe'},
+    #                          {'name': 'MCX', 'description': 'Moscow Exchange', 'parent_name': 'Russia'},
+    #                          {'name': 'MCX Index', 'description': 'MCX Index', 'parent_name': 'MCX'},
+    #                          {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
+    #                          ])
+    #
+    # dfMICEX = etl.get_quandl_data(ticket='GOOG/MCX_MOEX', start='2014-01-01', end=str(datetime.datetime.today()), Category=Category, SaveToDB=True)
+
+
     # Get Raw data
     
-    dtStart = datetime.datetime.now()
-    
-    datax = DB.get_raw_data(RateName='sepal_length')
-    
-    dtEnd = datetime.datetime.now()    
-    print('get_raw_data exec time: {}'.format(dtEnd - dtStart))
-    
-    dtStart = datetime.datetime.now()
-    c, r, rh = etl.get_Kospi_data_ex1(path = "local_files/Kospi Quotes Eikon Loader 28102016.xlsx", SaveToDB = True)
-    
-    dtEnd = datetime.datetime.now()    
-    print('etl.get_Kospi_data exec time: {}'.format(dtEnd - dtStart))   
+    # dtStart = datetime.datetime.now()
+    #
+    # datax = DB.get_raw_data(RateName='sepal_length')
+    #
+    # dtEnd = datetime.datetime.now()
+    # print('get_raw_data exec time: {}'.format(dtEnd - dtStart))
+    #
+    # dtStart = datetime.datetime.now()
+    # c, r, rh = etl.get_Kospi_data_ex1(path = "local_files/Kospi Quotes Eikon Loader 28102016.xlsx", SaveToDB = True)
+    #
+    # dtEnd = datetime.datetime.now()
+    # print('etl.get_Kospi_data exec time: {}'.format(dtEnd - dtStart))
     
     #datay = DB.get_raw_data('ssadsa')
     #y = datay[2]
