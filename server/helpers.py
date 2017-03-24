@@ -151,3 +151,77 @@ def add_datasets_to_model(base, model_id, models_table, model_2_data_table, data
     if len(to_insert):
         ins = insert(model_2_data_table).values(to_insert)
         base.engine.connect().execute(ins)
+
+
+def get_rates(base, category_table, rates_table, rates_history_table, source_table):
+#    categories = [
+#        {'id': 1, 'name': '1_node', 'all_childs': [{'id': 2, 'name': '1.1', 'has_childs': False}, {'id': 3, 'name': '1.2', 'has_childs': False}], 'has_childs': True},
+#        {'id': 4, 'name': '2_node', 'all_childs': [{'id': 5, 'name': '2.1', 'has_childs': False}, {'id': 6, 'name': '2.2', 'has_childs': False}], 'has_childs': True},
+#    ]
+#
+#
+#    rates = {
+#        '-1': [],
+#        '1' : [
+#            {'id':1, 'name': '1_rate', 'tag': '1_tag', 'source': '1_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]},
+#            {'id':2, 'name': '11_rate', 'tag': '11_tag', 'source': '11_source', 'head': head, 'table': [[11,2,3], [4,5,6], [7,8,9]]}],
+#        '2' : [{'id': 1, 'name': '2_rate', 'tag': '2_tag', 'source': '2_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#        '3' : [{'id': 1, 'name': '3_rate', 'tag': '3_tag', 'source': '3_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#        '4' : [{'id': 1, 'name': '4_rate', 'tag': '4_tag', 'source': '4_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#    }   #id, name, tag, head table
+
+    categories = []
+    rates = {-1: []}
+    head = ['Deta', 'Value', 'Tag']
+
+    # categories
+    s = select([category_table])
+    result = base.engine.connect().execute(s)
+
+    cats = {}
+
+    for row in result:
+        if row.id in cats:
+            cats[row.name] = row.name
+        else:
+            cats[row.id] = {'id': row.id, 'name': row.name, 'all_childs': []}
+
+        if row.parent_id is None:
+            categories.append(cats[row.id])
+        else:
+            if row.parent_id in cats:
+                cats[row.parent_id]['has_childs'] = True
+                cats[row.parent_id]['all_childs'].append(cats[row.id])
+            else:
+                cats[row.parent_id] = {'id': row.parent_id, 'all_childs': [cats[row.id]], 'has_childs': True}
+
+
+    # sources
+    s = select([source_table])
+    result = base.engine.connect().execute(s)
+
+    sources = {}
+
+    for source in result:
+        sources[source.id] = source.name
+
+    # rates
+    s = select([rates_table]).\
+            order_by(rates_table.category_id)
+    result = base.engine.connect().execute(s)
+
+    for rate in result:
+        s = select([rates_history_table])
+        history = base.engine.connect().execute(s)
+        history_table = []
+        for row in history:
+            history_table.append([row.date, row.string_value if row.string_value != '' else row.float_value, row.tag])
+
+        if rate.category_id not in rates:
+            rates[rate.category_id] = []
+
+        rates[rate.category_id].append(
+            {'id': rate.source_id, 'name': rate.name, 'tag': row.tag, 'source': sources[rate.source_id], 'head': head, 'table': history_table}
+        )
+
+    return (categories, rates)

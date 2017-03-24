@@ -166,35 +166,37 @@ def RepresentsInt(s):
 def rates():
     return_url="/"
 
-    head = ['Data', 'Value', 'Tag']
+#    head = ['Date', 'Value', 'Tag']
+#
+#    rates = [
+#        {'id': 1, 'name': '1_node', 'all_childs': [{'id': 2, 'name': '1.1', 'has_childs': False}, {'id': 3, 'name': '1.2', 'has_childs': False}], 'has_childs': True},
+#        {'id': 4, 'name': '2_node', 'all_childs': [{'id': 5, 'name': '2.1', 'has_childs': False}, {'id': 6, 'name': '2.2', 'has_childs': False}], 'has_childs': True},
+#    ]
+#
+#    tabs = {
+#        '-1': [],
+#        '1' : [
+#            {'id':1, 'name': '1_rate', 'tag': '1_tag', 'source': '1_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]},
+#            {'id':2, 'name': '11_rate', 'tag': '11_tag', 'source': '11_source', 'head': head, 'table': [[11,2,3], [4,5,6], [7,8,9]]}],
+#        '2' : [{'id': 1, 'name': '2_rate', 'tag': '2_tag', 'source': '2_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#        '3' : [{'id': 1, 'name': '3_rate', 'tag': '3_tag', 'source': '3_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#        '4' : [{'id': 1, 'name': '4_rate', 'tag': '4_tag', 'source': '4_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
+#    }
 
-    rates = [
-        {'id': 1, 'name': '1_node', 'all_childs': [{'id': 2, 'name': '1.1', 'has_childs': False}, {'id': 3, 'name': '1.2', 'has_childs': False}], 'has_childs': True},
-        {'id': 4, 'name': '2_node', 'all_childs': [{'id': 5, 'name': '2.1', 'has_childs': False}, {'id': 6, 'name': '2.2', 'has_childs': False}], 'has_childs': True},
-    ]
+    (rates, tabs) =  get_rates(base, Category, Rates, RatesHistory, Source)
 
-    tabs = {
-        '-1': [],
-        '1' : [
-            {'id':1, 'name': '1_rate', 'tag': '1_tag', 'source': '1_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]},
-            {'id':2, 'name': '11_rate', 'tag': '11_tag', 'source': '11_source', 'head': head, 'table': [[11,2,3], [4,5,6], [7,8,9]]}],
-        '2' : [{'id': 1, 'name': '2_rate', 'tag': '2_tag', 'source': '2_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-        '3' : [{'id': 1, 'name': '3_rate', 'tag': '3_tag', 'source': '3_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-        '4' : [{'id': 1, 'name': '4_rate', 'tag': '4_tag', 'source': '4_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-    }
 
-#    import pdb; pdb.set_trace()
     if 'node' in request.args:
         return render_template(
             "tree.tmpl",
-            tabs=tabs.get(request.args.get('node'), []),
+            tabs=tabs.get(int(request.args.get('node')), []),
             nodes=rates,
             return_url=return_url,
         )
     else:
         return render_template(
             "tree.tmpl",
-            tabs=tabs["1"],
+            tabs=tabs[-1],
             nodes=rates,
             return_url=return_url,
         )

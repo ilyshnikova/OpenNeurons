@@ -11,7 +11,7 @@
 
     {%for tab in tabs %}
         <div class="tab-pane" id="{{tab.id}}" style="width:600px">
-            <p>{{tab.tag}}&nbsp;{{tab.source}}</p>
+            <p>{{tab.tag}}}</p>
 
             {%with head=tab.head, table=tab.table, template_name="table.tmpl" %}
                    {%include template_name%}
