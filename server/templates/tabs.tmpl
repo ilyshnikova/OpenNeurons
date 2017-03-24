@@ -6,7 +6,12 @@
 
 <div class="tab-content" style="width:600px">
     <div class="tab-pane active">
-        Select the tab.
+        {% if tabs|length %}
+            Select the tab.
+        {%else %}
+            No rates.
+        {%endif%}
+
     </div>
 
     {%for tab in tabs %}

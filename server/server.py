@@ -3,7 +3,7 @@
 from flask import Flask, send_from_directory, render_template, request
 import json
 import os
-from helpers import *
+from .helpers import *
 
 from sqlalchemy import *
 
@@ -183,9 +183,7 @@ def rates():
             return_url=return_url,
         )
 
-
-if __name__ == "__main__":
-#    os.chdir("/root/open_trm/")
+def server_main():
     app.jinja_env.tests['equalto'] = lambda value, other : value == other
     app.run(
         host=config['server']['host'],
@@ -194,3 +192,7 @@ if __name__ == "__main__":
         debug=True,
         threaded=False,
     )
+
+
+if __name__ == "__main__":
+    server_main()
