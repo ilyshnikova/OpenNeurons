@@ -166,7 +166,6 @@ def RepresentsInt(s):
 def rates():
     return_url="/"
 
-    import pdb; pdb.set_trace()
     (cats, rate, tabs) =  get_rates(base, Category, Rates, RatesHistory, Source, request.args.get('node'), request.args.get('rate'))
 
     if 'node' in request.args:
