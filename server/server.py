@@ -9,7 +9,7 @@ from sqlalchemy import *
 
 import sys
 
-from manager.reader import *
+from manager.dbmanager import *
 
 app = Flask(__name__)
 
@@ -24,19 +24,7 @@ def add_default_values(elements, request):
 with open('config.json') as data_file:
         config = json.load(data_file)
 
-base = DBManager(
-    db_name=config['database']['db_name'],
-    user=config['database']['user'],
-    host=config['database']['host'],
-)
-
-
-models_table = Table('model', metadata, autoload=True)
-models_2_data_table = Table('model_2_data_set', metadata, autoload=True)
-dataset_table = Table('data_set', metadata, autoload=True)
-dataset_comp_table = Table('data_set_component', metadata, autoload=True)
-dataset_values_table = Table('data_set_values', metadata, autoload=True)
-
+base = DBManager()
 
 @app.route('/files/<path:path>')
 def send_file(path):
@@ -56,14 +44,8 @@ def ok():
                 'href': '/chose_dataset'
             },
             {
-                'title' : 'Просмотр лингвистических переменных',
-                'href' : '/ling-vars',
-                'disabled' : True,
-            },
-            {
-                'title' : 'Просмотр правил базы знаний нечетких высказываний',
-                'href' : '/rules',
-                'disabled' : True,
+                'title' : 'Rates',
+                'href' : '/rates',
             },
         ],
     )
@@ -72,7 +54,7 @@ def ok():
 @app.route('/models')
 def show_models():
 
-    options = get_models_pretty_list(base, models_table)
+    options = get_models_pretty_list(base, Model)
     print(options)
 
     elements = [
@@ -87,7 +69,7 @@ def show_models():
     return_url="/"
 
     if request.args.get('result'):
-        (model_info, datasets) = get_model_info(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+        (model_info, datasets) = get_model_info(base, request.args.get('models'), Model, Model2Dataset, DataSet)
 
         return render_template(
             "models.html",
@@ -108,7 +90,7 @@ def show_dataset():
 
     return_url="/models?models=%s&result=1" % request.args.get('models')
 
-    (head, dataset) = get_dataset(base, request.args.get('id'), dataset_comp_table, dataset_values_table)
+    (head, dataset) = get_dataset(base, request.args.get('id'), DataSetComponent, DataSetValues)
 
     return render_template(
         "dataset.html",
@@ -123,7 +105,7 @@ def show_dataset():
 def show_chose_dataset():
     return_url="/"
 
-    options = get_models_pretty_list(base, models_table)
+    options = get_models_pretty_list(base, Model)
 
     elements = [
         {
@@ -136,7 +118,7 @@ def show_chose_dataset():
     ]
 
     if request.args.get('result') == '1':
-        (datasets, checked_datasets) = get_all_dataset_for_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+        (datasets, checked_datasets) = get_all_dataset_for_model(base, request.args.get('models'), Model, Model2Dataset, DataSet)
 
         return render_template(
             "checkbox_list.html",
@@ -147,13 +129,16 @@ def show_chose_dataset():
             result=2,
         )
     elif request.args.get('result') == '2':
+        add_datasets_to_model(base, request.args.get('models'), Model, Model2Dataset, DataSet, request.args.get('datasets_ids').split(','))
+
         (datasets, checked_datasets) = get_all_dataset_for_model(
             base,
             request.args.get('models'),
-            models_table, models_2_data_table, dataset_table,
+            Model, Model2Dataset, DataSet,
             request.args.get('datasets_ids').split(','))
 
-        add_datasets_to_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table, request.args.get('datasets_ids').split(','))
+
+
         return render_template(
             "checkbox_list.html",
             return_url=return_url,

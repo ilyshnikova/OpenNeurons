@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
 
-STRLEN = 50
+STRLEN = 1000
 
 
 class Base:
@@ -92,6 +92,8 @@ class DataSetComponent(Base):
     component_type = Column(String(STRLEN))
     component_index = Column(Integer)
     component_name = Column(String(STRLEN))
+#    component_tag = Column(String(STRLEN))
+
     datasetvalues = relationship(
         'DataSetValues',
         backref=backref('datasetcomponent')

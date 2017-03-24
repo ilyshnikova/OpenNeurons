@@ -7,7 +7,7 @@
 
 			<div  class="input-group" role=group style="text-align:center; margin-top:15%">
 				{% for element in elements %}
-                <a href="{% if 'href' in element %} {{element.href}} {% else %}#{% endif %}" class="list-group-item {% if 'disabled' in element %} disabled {% endif %}">{{element.title.decode('utf-8')}}</a>
+                <a href="{% if 'href' in element %} {{element.href}} {% else %}#{% endif %}" class="list-group-item {% if 'disabled' in element %} disabled {% endif %}">{{element.title}}</a>
 				{% endfor %}
 			</div>
 		</center>
