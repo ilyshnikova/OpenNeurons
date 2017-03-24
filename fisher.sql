@@ -151,7 +151,7 @@ CREATE TABLE datasetcomponent (
     component_type character varying(50),
     component_index integer,
     component_name character varying(50),
-    tag character varying(50),
+    component_tag character varying(50),
     id integer NOT NULL
 );
 
@@ -351,7 +351,7 @@ SELECT pg_catalog.setval('dataset_id_seq', 1, true);
 -- Data for Name: datasetcomponent; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY datasetcomponent (dataset_id, component_type, component_index, component_name, tag, id) FROM stdin;
+COPY datasetcomponent (dataset_id, component_type, component_index, component_name, component_tag, id) FROM stdin;
 1	I	1	X1	\N	1
 1	I	2	X2	\N	2
 1	I	3	X3	\N	3

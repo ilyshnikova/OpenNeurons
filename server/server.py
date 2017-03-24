@@ -165,20 +165,22 @@ def RepresentsInt(s):
 @app.route('/rates')
 def rates():
     return_url="/"
-    (rates, tabs) =  get_rates(base, Category, Rates, RatesHistory, Source)
-
+    (cats, rate, tabs) =  get_rates(base, Category, Rates, RatesHistory, Source, request.args.get('node'), request.args.get('rate'))
 
     if 'node' in request.args:
         return render_template(
             "tree.tmpl",
-            tabs=tabs.get(int(request.args.get('node')), []),
-            nodes=rates,
+            tabs=tabs,
+            cur_tab=rate,
+            nodes=cats,
+            category=request.args.get('node'),
+            cur_rate=request.args.get('rate'),
             return_url=return_url,
         )
     else:
         return render_template(
             "tree.tmpl",
-            tabs=tabs[-1],
+            tab=[],
             nodes=rates,
             return_url=return_url,
         )

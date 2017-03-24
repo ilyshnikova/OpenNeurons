@@ -153,7 +153,7 @@ def add_datasets_to_model(base, model_id, models_table, model_2_data_table, data
         base.engine.connect().execute(ins)
 
 
-def get_rates(base, category_table, rates_table, rates_history_table, source_table):
+def get_rates(base, category_table, rates_table, rates_history_table, source_table, category_id, cur_rate_id):
 #    categories = [
 #        {'id': 1, 'name': '1_node', 'all_childs': [{'id': 2, 'name': '1.1', 'has_childs': False}, {'id': 3, 'name': '1.2', 'has_childs': False}], 'has_childs': True},
 #        {'id': 4, 'name': '2_node', 'all_childs': [{'id': 5, 'name': '2.1', 'has_childs': False}, {'id': 6, 'name': '2.2', 'has_childs': False}], 'has_childs': True},
@@ -171,7 +171,7 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
 #    }   #id, name, tag, head table
 
     categories = []
-    rates = {-1: []}
+    rates = {}
     head = ['Deta', 'Value', 'Tag']
 
     # categories
@@ -195,6 +195,8 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
             else:
                 cats[row.parent_id] = {'id': row.parent_id, 'all_childs': [cats[row.id]], 'has_childs': True}
 
+    if category_id is None:
+        return (categories, [], [])
 
     # sources
     s = select([source_table])
@@ -207,21 +209,20 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
 
     # rates
     s = select([rates_table]).\
-            order_by(rates_table.category_id)
+            where(rates_table.category_id == category_id)
     result = base.engine.connect().execute(s)
 
+    tabs = []
+
     for rate in result:
-        s = select([rates_history_table])
-        history = base.engine.connect().execute(s)
-        history_table = []
-        for row in history:
-            history_table.append([row.date, row.string_value if row.string_value != '' else row.float_value, row.tag])
+        if (rate.id == cur_rate_id):
+            s = select([rates_history_table]).where(rates_history_table.rates_id == rate.id)
+            history = base.engine.connect().execute(s)
+            history_table = []
+            for row in history:
+                history_table.append([row.date, row.string_value if row.string_value != '' else row.float_value, row.tag])
 
-        if rate.category_id not in rates:
-            rates[rate.category_id] = []
+            rates = {'id': rate.id, 'name': rate.name, 'tag': row.tag, 'source': sources[rate.source_id], 'head': head, 'table': history_table}
+        tabs.append({'id': rate.id, 'name': rate.name})
 
-        rates[rate.category_id].append(
-            {'id': rate.source_id, 'name': rate.name, 'tag': row.tag, 'source': sources[rate.source_id], 'head': head, 'table': history_table}
-        )
-
-    return (categories, rates)
+    return (categories, rates, tabs)
