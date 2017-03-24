@@ -1,0 +1,50 @@
+<html>
+	<head>
+		{% include "basic-js-imports.tmpl" %}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="/files/css/tree.css">
+        <link rel="stylesheet" type="text/css" href="/files/js/tree.js">
+        <link rel="stylesheet" type="text/css" href="/files/js/tabs.js">
+	</head>
+
+	<body>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th> Categories</th>
+                            <th> Rates Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th>
+                                <div class="tree" style="padding:1px">
+                                    <ul>
+                                        {%for node in nodes %}
+                                            {%include "rec_tree.tmpl" %}
+                                        {%endfor%}
+                                    </ul>
+                                </div>
+                            </th>
+                            <th>
+                                <center>
+                                    {%include "tabs.tmpl" %}
+                                </center>
+                            </th>
+                        </tr>
+                    </tbody>
+                </table>
+        </div>
+
+        <center>
+		    {% if return_url %}
+			    <button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
+    		{% endif %}
+        </center>
+ 	</body>
+</html>
+
