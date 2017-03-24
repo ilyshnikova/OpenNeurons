@@ -93,8 +93,9 @@ def get_dataset(base, dataset_id, dataset_comp_table, dataset_values_table):
     return (head, table)
 
 
-def get_all_dataset_for_model(base, model_id, models_table, model_2_data_table, dataset_table, checked_datasets=[]):
+def get_all_dataset_for_model(base, model_id, models_table, model_2_data_table, dataset_table):
     datasets = []
+    checked_datasets = []
 
     models_datasets = get_model_info(base, model_id, models_table, model_2_data_table, dataset_table)[1];
 
@@ -137,7 +138,7 @@ def add_datasets_to_model(base, model_id, models_table, model_2_data_table, data
 
     for ds in datasets:
         if RepresentsInt(ds) and not ds in models_dataset_list:
-            to_insert.append({'data_set_id': ds, 'model_id': model_id})
+            to_insert.append({'dataset_id': ds, 'model_id': model_id})
 
     if len(to_delete):
         session = sessionmaker(bind=base.engine)()
@@ -145,7 +146,7 @@ def add_datasets_to_model(base, model_id, models_table, model_2_data_table, data
 
         for row in ds.all():
             session.delete(row)
-        session.close()
+        session.commit()
 
     if len(to_insert):
         ins = insert(model_2_data_table).values(to_insert)

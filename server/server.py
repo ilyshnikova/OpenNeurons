@@ -129,15 +129,13 @@ def show_chose_dataset():
             result=2,
         )
     elif request.args.get('result') == '2':
+
         add_datasets_to_model(base, request.args.get('models'), Model, Model2Dataset, DataSet, request.args.get('datasets_ids').split(','))
 
         (datasets, checked_datasets) = get_all_dataset_for_model(
             base,
             request.args.get('models'),
-            Model, Model2Dataset, DataSet,
-            request.args.get('datasets_ids').split(','))
-
-
+            Model, Model2Dataset, DataSet)
 
         return render_template(
             "checkbox_list.html",

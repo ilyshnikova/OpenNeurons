@@ -46,7 +46,7 @@
 		{% if return_url %}
 			<button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
 		{% endif %}
-        <input type=hidden name="datasets_ids" value={{ datasets_ids if datasets_ids != None else ""}} id="datasets_ids"/>
+        <input type=hidden name="datasets_ids" value="{{datasets_ids or ''}}" id="datasets_ids"/>
 	</div>
 </form>
 
