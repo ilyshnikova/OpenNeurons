@@ -215,7 +215,7 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
     tabs = []
 
     for rate in result:
-        if (rate.id == cur_rate_id):
+        if ((cur_rate_id is None and rates == {}) or (cur_rate_id is not None and int(rate.id) == int(cur_rate_id))):
             s = select([rates_history_table]).where(rates_history_table.rates_id == rate.id)
             history = base.engine.connect().execute(s)
             history_table = []

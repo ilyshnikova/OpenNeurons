@@ -1,6 +1,9 @@
 <ul class="nav nav-tabs" id="myTab">
     {%for tab in tabs %}
-      <li><a data-target="#{{tab.id}}" data-toggle="tab" href="/rates?node={{category}}&rate={{tab.id}}">{{tab.name}}</a></li>
+        <li        {% if cur_tab.id == tab.id %}
+            class="active"
+        {%endif%}
+        ><a href="/rates?node={{category}}&rate={{tab.id}}">{{tab.name}}</a></li>
     {%endfor%}
 </ul>
 
@@ -9,8 +12,7 @@
             <div class="tab-pane active">
                 No Rates.
             </div>
-        {%endif%}
-
+        {% else %}
         <div class="tab-pane active" id="{{cur_tab.id}}" style="width:600px">
             <p>Tag : {{cur_tab.tag}}</p>
 
@@ -18,5 +20,6 @@
                    {%include template_name%}
             {%endwith%}
         </div>
+        {%endif%}
 </div>
 
