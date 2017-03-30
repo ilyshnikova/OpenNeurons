@@ -13,13 +13,13 @@
                 No Rates.
             </div>
         {% else %}
-        <div class="tab-pane active" id="{{cur_tab.id}}" style="width:600px">
-            <p>Tag : {{cur_tab.tag}}</p>
+            <div class="tab-pane active" id="{{cur_tab.id}}" style="width:600px">
+                <p>Tag : {{cur_tab.tag}}</p>
 
-            {%with head=cur_tab.head, table=cur_tab.table, template_name="table.tmpl" %}
+                {%with head=cur_tab.head, table=cur_tab.table, template_name="table.tmpl" %}
                    {%include template_name%}
-            {%endwith%}
-        </div>
+                {%endwith%}
+            </div>
         {%endif%}
 </div>
 

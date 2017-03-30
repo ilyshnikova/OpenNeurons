@@ -1,130 +1,141 @@
-import json
-from sqlalchemy import *
+from sqlalchemy import select, insert
 from sqlalchemy.orm import sessionmaker
 import numpy as np
+from models.models import Model, Model2Dataset, \
+    DataSet, DataSetComponent, DataSetValues, \
+    Category, Rates, RatesHistory, Source
 
-def get_models_pretty_list(base, table):
-    s = select([table])
+
+def get_models_pretty_list(base):
+    s = select([Model])
     result = base.engine.connect().execute(s)
     models = []
 
     for row in result:
-        models += [{'title': 'Data analysing model : "' + str(row['model_name']) + '"', 'id': str(int(row['id']))}]
+        models += [{
+            'title': 'Data analysing model : "' + str(row['model_name']) + '"',
+            'id': str(int(row['id']))
+        }]
 
     return models
 
 
-def get_model_info(base, model_id, models_table, model_2_data_table, dataset_table):
+def get_model_info(base, model_id):
     session = sessionmaker(bind=base.engine)()
-    models = session.query(models_table, model_2_data_table).\
-            join(model_2_data_table, model_2_data_table.model_id == models_table.id).\
-            filter(models_table.id == model_id)
+    models = session.query(Model, Model2Dataset). \
+        join(Model2Dataset, Model2Dataset.model_id == Model.id). \
+        filter(Model.id == model_id)
 
     dataset_list = []
     model_info = []
 
     if models is None:
-        return ([],[])
+        return [], []
 
     for model in models:
         model_info = [{
-                'title' : 'Model name',
-                'value' : model[0].model_name
+                'title': 'Model name',
+                'value': model[0].model_name
             },
             {
-                'title' : 'Description',
-                'value' : model[0].description,
-            },{
-                'title' : 'Model type',
-                'value' : model[0].model_type,
+                'title': 'Description',
+                'value': model[0].description,
+            }, {
+                'title': 'Model type',
+                'value': model[0].model_type,
             }]
 
-        s = select([dataset_table]).where(dataset_table.id == model[0].id)
+        s = select([DataSet]).where(DataSet.id == model[0].id)
         data_set = base.engine.connect().execute(s).first()
 
         if data_set is not None:
+            keywords = "id=%d&models=%d&name=%s" % (
+                data_set.id,
+                model[0].id,
+                data_set.name
+            )
             dataset_list.append(
                 [{
                     # for template
-                    'title' : 'Dataset name',
-                    'value' : data_set.name,
-                    'keywords': "id=%d&models=%d&name=%s" % (data_set.id, model[0].id, data_set.name),
+                    'title': 'Dataset name',
+                    'value': data_set.name,
+                    'keywords': keywords,
                     # additional info
                     'id': data_set.id,
                     'name': data_set.name,
                 }]
             )
 
-    return (model_info, dataset_list)
+    return model_info, dataset_list
 
 
-def get_dataset(base, dataset_id, dataset_comp_table, dataset_values_table):
-    s = select([dataset_comp_table]).where(dataset_comp_table.dataset_id == dataset_id).order_by(dataset_comp_table.id)
+def get_dataset(base, dataset_id):
+    s = select([DataSetComponent]) \
+        .where(DataSetComponent.dataset_id == dataset_id) \
+        .order_by(DataSetComponent.id)
     dataset_comps = base.engine.connect().execute(s)
 
     head = []
     table = []
 
     for comp in dataset_comps:
-        s = select([dataset_values_table]).\
-                where(dataset_values_table.dataset_id == dataset_id).\
-                where(dataset_values_table.component_id == comp.id).\
-                order_by(dataset_values_table.vector_id)
+        s = select([DataSetValues]). \
+            where(DataSetValues.dataset_id == dataset_id). \
+            where(DataSetValues.component_id == comp.id). \
+            order_by(DataSetValues.vector_id)
         vector = base.engine.connect().execute(s)
 
         col = []
-        prev_vect_id = 0
+        prev = 0
         for i in vector:
-            if prev_vect_id + 1 == i.vector_id:
+            if prev + 1 == i.vector_id:
                 col.append(i.value)
             else:
-                while  prev_vect_id < i.vector_id and prev_vect_id + 1 != i.vector_id:
+                while prev < i.vector_id and prev + 1 != i.vector_id:
                     col.append(0)
-                    prev_vect_id += 1
-            prev_vect_id += 1
-
+                    prev += 1
+            prev += 1
 
         table.append(col)
         head.append("%s(%s)" % (comp.component_name, comp.component_type))
 
-
     table = np.array(table).transpose().tolist()
 
-    return (head, table)
+    return head, table
 
 
-def get_all_dataset_for_model(base, model_id, models_table, model_2_data_table, dataset_table):
+def get_all_dataset_for_model(base, model_id):
     datasets = []
     checked_datasets = []
 
-    models_datasets = get_model_info(base, model_id, models_table, model_2_data_table, dataset_table)[1];
+    models_datasets = get_model_info(base, model_id)[1]
 
     for ds in models_datasets:
         ds = ds[0]
         checked_datasets.append(str(ds['id']))
 
-    s = select([dataset_table])
+    s = select([DataSet])
     dss = base.engine.connect().execute(s)
     for ds in dss:
         datasets.append({
             'id': ds.id,
             'name': ds.name,
-            'checked' : 1 if str(ds.id) in checked_datasets else 0,
+            'checked': 1 if str(ds.id) in checked_datasets else 0,
         })
     print(datasets)
     return datasets, checked_datasets
 
-def RepresentsInt(s):
+
+def can_be_represented_as_int(s):
     try:
         int(s)
         return True
     except ValueError:
         return False
 
-def add_datasets_to_model(base, model_id, models_table, model_2_data_table, dataset_table, datasets):
-    data_to_insert = []
 
-    models_datasets = get_model_info(base, model_id, models_table, model_2_data_table, dataset_table)[1];
+def add_datasets_to_model(base, model_id, datasets):
+    models_datasets = get_model_info(base, model_id)[1]
 
     to_delete = []
     to_insert = []
@@ -137,45 +148,31 @@ def add_datasets_to_model(base, model_id, models_table, model_2_data_table, data
         models_dataset_list.append(str(ds['id']))
 
     for ds in datasets:
-        if RepresentsInt(ds) and not ds in models_dataset_list:
+        if can_be_represented_as_int(ds) and ds not in models_dataset_list:
             to_insert.append({'dataset_id': ds, 'model_id': model_id})
 
-    if len(to_delete):
+    if to_delete:
         session = sessionmaker(bind=base.engine)()
-        ds = session.query(model_2_data_table).filter(model_2_data_table.model_id == model_id, model_2_data_table.dataset_id.in_(to_delete))
+        ds = session.query(Model2Dataset) \
+            .filter(Model2Dataset.model_id == model_id,
+                    Model2Dataset.dataset_id.in_(to_delete))
 
         for row in ds.all():
             session.delete(row)
         session.commit()
 
-    if len(to_insert):
-        ins = insert(model_2_data_table).values(to_insert)
+    if to_insert:
+        ins = insert(Model2Dataset).values(to_insert)
         base.engine.connect().execute(ins)
 
 
-def get_rates(base, category_table, rates_table, rates_history_table, source_table, category_id, cur_rate_id):
-#    categories = [
-#        {'id': 1, 'name': '1_node', 'all_childs': [{'id': 2, 'name': '1.1', 'has_childs': False}, {'id': 3, 'name': '1.2', 'has_childs': False}], 'has_childs': True},
-#        {'id': 4, 'name': '2_node', 'all_childs': [{'id': 5, 'name': '2.1', 'has_childs': False}, {'id': 6, 'name': '2.2', 'has_childs': False}], 'has_childs': True},
-#    ]
-#
-#
-#    rates = {
-#        '-1': [],
-#        '1' : [
-#            {'id':1, 'name': '1_rate', 'tag': '1_tag', 'source': '1_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]},
-#            {'id':2, 'name': '11_rate', 'tag': '11_tag', 'source': '11_source', 'head': head, 'table': [[11,2,3], [4,5,6], [7,8,9]]}],
-#        '2' : [{'id': 1, 'name': '2_rate', 'tag': '2_tag', 'source': '2_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-#        '3' : [{'id': 1, 'name': '3_rate', 'tag': '3_tag', 'source': '3_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-#        '4' : [{'id': 1, 'name': '4_rate', 'tag': '4_tag', 'source': '4_source', 'head': head, 'table': [[1,2,3], [4,5,6], [7,8,9]]}],
-#    }   #id, name, tag, head table
-
+def get_rates(base, category_id, cur_rate_id):
     categories = []
     rates = {}
     head = ['Deta', 'Value', 'Tag']
 
     # categories
-    s = select([category_table])
+    s = select([Category])
     result = base.engine.connect().execute(s)
 
     cats = {}
@@ -193,13 +190,17 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
                 cats[row.parent_id]['has_childs'] = True
                 cats[row.parent_id]['all_childs'].append(cats[row.id])
             else:
-                cats[row.parent_id] = {'id': row.parent_id, 'all_childs': [cats[row.id]], 'has_childs': True}
+                cats[row.parent_id] = {
+                    'id': row.parent_id,
+                    'all_childs': [cats[row.id]],
+                    'has_childs': True
+                }
 
     if category_id is None:
-        return (categories, [], [])
+        return categories, [], []
 
     # sources
-    s = select([source_table])
+    s = select([Source])
     result = base.engine.connect().execute(s)
 
     sources = {}
@@ -208,21 +209,37 @@ def get_rates(base, category_table, rates_table, rates_history_table, source_tab
         sources[source.id] = source.name
 
     # rates
-    s = select([rates_table]).\
-            where(rates_table.category_id == category_id)
+    s = select([Rates]). \
+        where(Rates.category_id == category_id)
     result = base.engine.connect().execute(s)
 
     tabs = []
 
     for rate in result:
-        if ((cur_rate_id is None and rates == {}) or (cur_rate_id is not None and int(rate.id) == int(cur_rate_id))):
-            s = select([rates_history_table]).where(rates_history_table.rates_id == rate.id)
+        no_valid_rate = cur_rate_id is None and not rates == {}
+        current_rate_id = int(cur_rate_id) if cur_rate_id else None
+        rate_id = int(rate.id)
+        rate_id_match = cur_rate_id is not None and current_rate_id == rate_id
+        if no_valid_rate or rate_id_match:
+            s = select([RatesHistory]).where(RatesHistory.rates_id == rate.id)
             history = base.engine.connect().execute(s)
             history_table = []
             for row in history:
-                history_table.append([row.date, row.string_value if row.string_value != '' else row.float_value, row.tag])
+                history_table.append([
+                    row.date, row.string_value
+                    if row.string_value != ''
+                    else row.float_value, row.tag
+                ])
 
-            rates = {'id': rate.id, 'name': rate.name, 'tag': row.tag, 'source': sources[rate.source_id], 'head': head, 'table': history_table}
+            rates = {
+                'id': rate.id,
+                'name': rate.name,
+                'tag': rate.tag,
+                'source': sources[rate.source_id],
+                'head': head,
+                'table': history_table
+            }
         tabs.append({'id': rate.id, 'name': rate.name})
 
-    return (categories, rates, tabs)
+    return categories, rates, tabs
+

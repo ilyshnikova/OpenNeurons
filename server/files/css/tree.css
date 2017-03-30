@@ -1,4 +1,4 @@
-.tree li {
+:SE.tree li {
     margin: 0px 0;
     list-style-type: none;
     position: relative;
@@ -57,3 +57,31 @@
  .tree li a:hover+ul li::after, .tree li a:hover+ul li::before, .tree li a:hover+ul::before, .tree li a:hover+ul ul::before {
     border-color: #94a0b4;
 }
+
+
+.rates-view {
+    display: table;
+    width: 100%;
+}
+
+.rates-heading, .rates-contents {
+    display: table-row;
+}
+
+
+.rates-heading-entry, .rates-contents-nav, .rates-contents-main {
+    display: table-cell;
+    border: 1px solid lightgray;
+    padding: 5px;
+}
+
+.rates-heading-entry {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+.tab-content {
+    margin-left: auto;
+    margin-right: auto;
+}T

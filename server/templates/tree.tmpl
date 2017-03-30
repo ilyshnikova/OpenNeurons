@@ -11,32 +11,23 @@
 	</head>
 
 	<body>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th> Categories</th>
-                            <th> Rates Info</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th>
-                                <div class="tree" style="padding:1px">
-                                    <ul>
-                                        {%for node in nodes %}
-                                            {%include "rec_tree.tmpl" %}
-                                        {%endfor%}
-                                    </ul>
-                                </div>
-                            </th>
-                            <th>
-                                <center>
-                                    {%include "tabs.tmpl" %}
-                                </center>
-                            </th>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="rates-view">
+            <div class="rates-heading">
+                <div class="rates-heading-entry">Categories</div>
+                <div class="rates-heading-entry">Rates Info</div>
+            </div>
+            <div class="rates-contents">
+                <div class="rates-contents-nav tree">
+                    <ul>
+                        {%for node in nodes %}
+                            {%include "rec_tree.tmpl" %}
+                        {%endfor%}
+                    </ul>
+                </div>
+                <div class="rates-contents-main">
+                    {% include "tabs.tmpl" %}
+                </div>
+            </div>
         </div>
 
         <center>
@@ -46,4 +37,5 @@
         </center>
  	</body>
 </html>
+
 
