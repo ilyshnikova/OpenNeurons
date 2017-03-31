@@ -1,0 +1,25 @@
+<ul class="nav nav-tabs" id="myTab">
+    {%for tab in tabs %}
+        <li        {% if cur_tab.id == tab.id %}
+            class="active"
+        {%endif%}
+        ><a href="/rates?node={{category}}&rate={{tab.id}}">{{tab.name}}</a></li>
+    {%endfor%}
+</ul>
+
+<div class="tab-content" style="width:600px">
+        {% if tabs|length == 0 %}
+            <div class="tab-pane active">
+                No Rates.
+            </div>
+        {% else %}
+            <div class="tab-pane active" id="{{cur_tab.id}}" style="width:600px">
+                <p>Tag : {{cur_tab.tag}}</p>
+
+                {%with head=cur_tab.head, table=cur_tab.table, template_name="table.tmpl" %}
+                   {%include template_name%}
+                {%endwith%}
+            </div>
+        {%endif%}
+</div>
+

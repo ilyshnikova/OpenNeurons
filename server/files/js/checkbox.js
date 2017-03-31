@@ -1,16 +1,18 @@
-function FillCheckBox(element){
+function FillCheckBox(element) {
+    val = $('#datasets_ids').val();
+
+    if (val) {
+        chosed_vals = new Set(val.split(','));
+    } else {
+        chosed_vals = new Set();
+    }
+
     if (element.checked) {
         chosed_vals.add($(element).attr('id'));
     } else {
         chosed_vals.delete($(element).attr('id'));
     }
+
+    list = Array.from(chosed_vals);
+    $('#datasets_ids').val(list.join(','));
 }
-
-
-$(document).ready(function(){
-    chosed_vals = new Set($('#datasets_ids').val().split(','));
-    $('#submit_button').bind("click", function() {
-        list = Array.from(chosed_vals);
-        $('#datasets_ids').val(list.join(','));
-    });
-});

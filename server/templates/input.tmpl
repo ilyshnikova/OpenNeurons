@@ -3,7 +3,7 @@
 		{% for element in elements %}
 			{% if element.type == "choice" %}
 				<div class="input-group">
-					<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+					<span class="input-group-addon"> {{element.title}} </span>
 
 					<div class="btn-group input-group">
 
@@ -35,7 +35,7 @@
 				</div>
 			{% else %}
 				<div class="input-group">
-					<span class="input-group-addon"> {{element.title.decode('utf-8')}} </span>
+					<span class="input-group-addon"> {{element.title}} </span>
 					<input type="text" name={{element.id}} class="form-control" value="{{element.default}}" />
 				</div>
 			{% endif %}
@@ -46,7 +46,7 @@
 		{% if return_url %}
 			<button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
 		{% endif %}
-        <input type=hidden name="datasets_ids" value={{ datasets_ids if datasets_ids != None else ""}} id="datasets_ids"/>
+        <input type=hidden name="datasets_ids" value="{{datasets_ids or ''}}" id="datasets_ids"/>
 	</div>
 </form>
 
