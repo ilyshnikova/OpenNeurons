@@ -51,33 +51,16 @@ if __name__ == '__main__':
     # etl.load_supervised_data(path=path, ctg_name=load_data_instr["category_name"])
 
     # Init Category before data insert
-    # Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
-    #                          {'name': 'Europe', 'description': 'Europe', 'parent_name': 'Financial Markets'},
-    #                          {'name': 'Russia', 'description': 'Russia', 'parent_name': 'Europe'},
-    #                          {'name': 'MCX', 'description': 'Moscow Exchange', 'parent_name': 'Russia'},
-    #                          {'name': 'MCX Index', 'description': 'MCX Index', 'parent_name': 'MCX'},
-    #                          {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
-    #                          ])
-    #
-    # dfMICEX = etl.get_quandl_data(ticket='MOEX', start='2015-04-04', end='2017-04-04', Category=Category, SaveToDB=True)
+    Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
+                             {'name': 'Europe', 'description': 'Europe', 'parent_name': 'Financial Markets'},
+                             {'name': 'Russia', 'description': 'Russia', 'parent_name': 'Europe'},
+                             {'name': 'MCX', 'description': 'Moscow Exchange', 'parent_name': 'Russia'},
+                             {'name': 'MCX Index', 'description': 'MCX Index', 'parent_name': 'MCX'},
+                             {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
+                             ])
 
+    dfMICEX = etl.get_quandl_data(ticket='MOEX',database='GOOG',start='2015-04-04', end='2017-04-04', Category=Category, SaveToDB=True)
 
-    # [x, y, z] = DB.get_raw_data(RateName='sepal_length')
-    # x1 = z['float_value']
-    #
-    # [x, y, z] = DB.get_raw_data(RateName='sepal_width')
-    # x2 = z['float_value']
-    #
-    # [x, y, z] = DB.get_raw_data(RateName='petal_length')
-    # x3 = z['float_value']
-    #
-    # [x, y, z] = DB.get_raw_data(RateName='petal_width')
-    # x4 = z['float_value']
-    #
-    # [x, y, z] = DB.get_raw_data(RateName='target')
-    # y = z['string_value']
-    #
-    # X = pd.concat([x1, x2, x3, x4], axis=1)
 
     # Get Raw data
     

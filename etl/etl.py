@@ -19,6 +19,8 @@ import os
 
 import quandl as qu
 
+api_key = ""
+
 
 class ETL:
     def __init__(self, manager: DBManager):
@@ -223,27 +225,33 @@ class ETL:
             DBManager.save_raw_data(Category, Rates, RatesHistory)
             #return (Category, Rates, RatesHistory)
 
-    def get_quandl_ticket_info(self, ticket):
-        r = requests.get('https://www.quandl.com/api/v3/databases/GOOG/codes?api_key=_iew_s3vKu8eChkY93pz')
-        z = zipfile.ZipFile(BytesIO(r.content))
-        df = pd.read_csv(z.open(name='GOOG-datasets-codes.csv'), header=None)
-        return df[df[0].str.contains('_'+ticket+'$')]
+    def get_quandl_ticket_info(self, ticket, database):
+        try:
+            # This API call is used to download all of the dataset codes and dataset names available in this database.
+            url = 'https://www.quandl.com/api/v3/databases/'+database+'/codes?'+api_key
+            r = requests.get(url)
+            z = zipfile.ZipFile(BytesIO(r.content))
+            df = pd.read_csv(z.open(name=database+'-datasets-codes.csv'), header=None)
 
-    def get_quandl_data(self, Category, ticket, start, end, collapse='monthly', Source='quandl', SaveToDB=True):
+            return df[df[0].str.contains('_'+ticket+'$')]
 
-        # exmpl: ticket = "AAPL"
+        except Exception as e:
+            raise e
+
+
+    def get_quandl_data(self, Category, ticket, database, start, end, collapse='monthly', Source='quandl', SaveToDB=True):
+
         if len(ticket.split("_")) == 1:
-            tickets = self.get_quandl_ticket_info(ticket)
-            if tickets.shape[0] != 1:
-                raise Exception("Correct the ticket or add exchange's name before underscore",
-                                tickets)
-            else:
+            tickets = self.get_quandl_ticket_info(ticket, database)
+            if tickets.shape[0] == 1:
                 ticket = tickets.iloc[:1, :1].values.tolist()[0]
                 dfData = pd.DataFrame(qu.get(ticket, start_date=start, end_date=end, collapse=collapse, returns="numpy"))
+            else:
+                raise Exception("Correct the ticket or add exchange's name before underscore",
+                                tickets)
 
-        # exmpl: ticket = "NASDAQ_AAPL"
         else:
-            ticket = 'GOOG/' + ticket
+            ticket = database+'/'+ticket
             dfData = pd.DataFrame(qu.get(ticket, start_date=start, end_date=end, collapse=collapse, returns="numpy"))
 
         if dfData.empty == True:
@@ -255,22 +263,14 @@ class ETL:
         trg_category = Category['name'].iloc[-1:].values[0]
 
         for rate in dfData.columns.values[1:]:
-            Rates = Rates.append({'name':          trg_category + "_" + rate,
-                                  'category_name': trg_category,
-                                  'tag':           None},
-                                 ignore_index=True)
+            Rates = Rates.append({'name': trg_category + "_" + rate, 'category_name': trg_category, 'tag': None}, ignore_index=True)
             for idx in range(dfData.shape[0]):
-                RatesHistory = RatesHistory.append({'rates_name':   trg_category + "_" + rate,
-                                                    'date':         dfData['Date'][idx],
-                                                    'float_value':  dfData[rate][idx],
-                                                    'string_value': None,
-                                                    'tag':          None},
-                                                   ignore_index=True)
+                RatesHistory = RatesHistory.append({'rates_name': trg_category + "_" + rate, 'date': dfData['Date'][idx], 'float_value': dfData[rate][idx], 'string_value': None, 'tag': None}, ignore_index=True)
 
         if SaveToDB:
             self.manager.save_raw_data(Category, Rates, RatesHistory, Source)
-        else:
-            return [Category, Rates, RatesHistory]
+
+        return [Category, Rates, RatesHistory]
 
 #IL would be better to have this stuff as 'get_IrisFisher_Data'
 
