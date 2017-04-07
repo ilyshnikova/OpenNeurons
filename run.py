@@ -59,8 +59,25 @@ if __name__ == '__main__':
     #                          {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
     #                          ])
     #
-    # dfMICEX = etl.get_quandl_data(ticket='GOOG/MCX_MOEX', start='2014-01-01', end=str(datetime.datetime.today()), Category=Category, SaveToDB=True)
+    # dfMICEX = etl.get_quandl_data(ticket='MOEX', start='2015-04-04', end='2017-04-04', Category=Category, SaveToDB=True)
 
+
+    # [x, y, z] = DB.get_raw_data(RateName='sepal_length')
+    # x1 = z['float_value']
+    #
+    # [x, y, z] = DB.get_raw_data(RateName='sepal_width')
+    # x2 = z['float_value']
+    #
+    # [x, y, z] = DB.get_raw_data(RateName='petal_length')
+    # x3 = z['float_value']
+    #
+    # [x, y, z] = DB.get_raw_data(RateName='petal_width')
+    # x4 = z['float_value']
+    #
+    # [x, y, z] = DB.get_raw_data(RateName='target')
+    # y = z['string_value']
+    #
+    # X = pd.concat([x1, x2, x3, x4], axis=1)
 
     # Get Raw data
     
@@ -76,63 +93,60 @@ if __name__ == '__main__':
     #
     # dtEnd = datetime.datetime.now()
     # print('etl.get_Kospi_data exec time: {}'.format(dtEnd - dtStart))
-    
-    #datay = DB.get_raw_data('ssadsa')
+    #
+    # #datay = DB.get_raw_data('ssadsa')
     #y = datay[2]
-    '''
-    insert_data = pd.concat([X, y], axis=1)
 
-    # # Save Raw data
-    Category = pd.DataFrame([{'Name': 'Iris Row Data', 'Description': 'Iris Fisher Row Data'},
-                             {'Name': 'Iris Attributes', 'Description': 'Iris Fisher Row Data', 'Parent_id': 1 },
-                             {'Name': 'Iris Classes', 'Description': 'Iris Fisher Row Data', 'Parent_id': 1 }],
-        index=[1, 2, 3])
-    Rates = pd.DataFrame([{'Name': 'X1 (Длина чашелистника)', 'category_id': 2, 'Source': 'Manual', 'tag': 'IRIS INPUT'},
-                           ],
-                index= [1])
-    RatesHistory = pd.DataFrame([{'rates_id': 1, 'date': None, 'float_value': 4.3, 'value_char': None, 'tag': '1'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '2'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '3'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '4'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.5, 'value_char': None, 'tag': '5'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '6'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '7'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '8'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '9'},
-                                 {'rates_id': 1, 'date': None, 'float_value': 4.7, 'value_char': None, 'tag': '10'}])
-    DB.save_raw_data(Category, Rates, RatesHistory, path='MANUAL')
+    # insert_data = pd.concat([X, y], axis=1)
+
+    # # # Save Raw data
+    # Category = pd.DataFrame([{'Name': 'Iris Row Data', 'Description': 'Iris Fisher Row Data'},
+    #                          {'Name': 'Iris Attributes', 'Description': 'Iris Fisher Row Data', 'Parent_id': 1 },
+    #                          {'Name': 'Iris Classes', 'Description': 'Iris Fisher Row Data', 'Parent_id': 1 }],
+    #     index=[1, 2, 3])
+    # Rates = pd.DataFrame([{'Name': 'X1 (Длина чашелистника)', 'category_id': 2, 'Source': 'Manual', 'tag': 'IRIS INPUT'},
+    #                        ],
+    #             index= [1])
+    # RatesHistory = pd.DataFrame([{'rates_id': 1, 'date': None, 'float_value': 4.3, 'value_char': None, 'tag': '1'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '2'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '3'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.4, 'value_char': None, 'tag': '4'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.5, 'value_char': None, 'tag': '5'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '6'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '7'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '8'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.6, 'value_char': None, 'tag': '9'},
+    #                              {'rates_id': 1, 'date': None, 'float_value': 4.7, 'value_char': None, 'tag': '10'}])
+    # DB.save_raw_data(Category, Rates, RatesHistory, path='MANUAL')
 
     ##### user's code #####
-    '''
-    '''X = X.as_matrix()
-    train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.7, random_state=42)
-    train_y_ohe = np.array(get_dummies(train_y), dtype=np.float64)
-    test_y_ohe = np.array(get_dummies(test_y), dtype=np.float64)
-    '''
+    # X = X.as_matrix()
+    # train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.7, random_state=42)
+    # train_y_ohe = np.array(get_dummies(train_y), dtype=np.float64)
+    # test_y_ohe = np.array(get_dummies(test_y), dtype=np.float64)
     #######################
 
-    # Simple Example
-    '''m = KerasClassifier(name='iris', args=build_args)
-    m.fit(train_X, train_y_ohe, fit_args=fit_args)
-    loss, accuracy = m.evaluate(test_X, test_y_ohe, evaluate_args)
-    prediction = m.predict(train_X)
-    print(loss, accuracy)
-    print(prediction)
-    '''
+    # # Simple Example
+    # m = KerasClassifier(name='iris', args=build_args)
+    # m.fit(train_X, train_y_ohe, fit_args=fit_args)
+    # loss, accuracy = m.evaluate(test_X, test_y_ohe, evaluate_args)
+    # prediction = m.predict(train_X)
+    # print(loss, accuracy)
+    # print(prediction)
+
     ##### user's code #####
-    '''ft_data = np.append(train_X, test_X, axis=0)
-    ft_data = pd.DataFrame(data=ft_data)
-    trg_data = np.append(train_y_ohe, test_y_ohe, axis=0)
-    trg_data = pd.DataFrame(data=trg_data)
-    '''
+    # ft_data = np.append(train_X, test_X, axis=0)
+    # ft_data = pd.DataFrame(data=ft_data)
+    # trg_data = np.append(train_y_ohe, test_y_ohe, axis=0)
+    # trg_data = pd.DataFrame(data=trg_data)
     #######################
 
     # Save dataset
-    '''DB.save_dataset(ft_data=ft_data,
-                        trg_data=trg_data,
-                        model_name=save_dataset_instr['model_name'],
-                        dataset_name=save_dataset_instr['dataset_name'])
-    '''
+    # DB.save_dataset(ft_data=ft_data,
+    #                     trg_data=trg_data,
+    #                     model_name=save_dataset_instr['model_name'],
+    #                     dataset_name=save_dataset_instr['dataset_name'])
+
     # # Get dataset
     # X, y = manager.get_dataset(dataset_name='Iris data')
 ####### Ex1 - KOSPI instruments from Excel
