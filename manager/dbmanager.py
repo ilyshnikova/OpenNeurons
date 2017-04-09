@@ -2,6 +2,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, aliased, joinedload
 
+import json
+import sys, inspect
+from sqlalchemy import insert
+
 from models.models import *
 
 import pandas as pd
@@ -29,7 +33,7 @@ class DBManager:
         return {'user': config['database']['user'],
                 'password': config['database']['password'],
                 'host': config['database']['host'],
-                'db_name': config['database']['db_name']}    
+                'db_name': config['database']['db_name']}
 
     def __get_or_create(self, model, **kwargs):
         instance = self.session.query(model).filter_by(**kwargs).all()
@@ -65,7 +69,7 @@ class DBManager:
                                                   all())
                     nestedlevel += 1
                     ParentCategory = self.__get_parent_category(ParentCategory, nestedlevel)
-                    AllCategory = AllCategory.append(ParentCategory, ignore_index=True)       
+                    AllCategory = AllCategory.append(ParentCategory, ignore_index=True)
         return AllCategory
 
     def __set_parent_category(self, dfCategory, category_name = None, nested_level = 0):
@@ -101,9 +105,9 @@ class DBManager:
                                         {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '9'},
                                         {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.7, 'string_value': None, 'tag': '10'}])
        return [Category, Rates, RatesHistory]
-    
+
     def get_raw_data(self, RateName, CategoryName = None, Tag = None):
-        # seems not to be working with parent depth more than 1 
+        # seems not to be working with parent depth more than 1
         # Category name?? Tag ??
         ParentCategory = aliased(Category)
 
@@ -120,7 +124,7 @@ class DBManager:
                                   all())
 
         dfCategory = self.__get_parent_category(dfCategory)
-        
+
         dfRates = pd.DataFrame(self.session.query(Rates.id, Rates.name, Rates.category_id, Category.name.label('category_name'), Rates.tag, Source.name.label('source'), Rates.source_id).\
                                filter(Rates.name == RateName).\
                                join(Source).\
@@ -140,7 +144,7 @@ class DBManager:
             rowc = self.__set_parent_category(dfCategory = category, \
                                        category_name =  rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
             rows = self.__get_or_create(Source, \
-                                       name = source)                           
+                                       name = source)
             rowr = self.__get_or_create(Rates, \
                                        name = rrh[0], \
                                        source = rows , \
@@ -283,3 +287,26 @@ class DBManager:
             self.session.rollback()
             raise e
 
+    def drop_all_tables(self):
+        metadata = Base.metadata
+        all_tables = list(reversed(metadata.sorted_tables))
+        for table in all_tables:
+            self.engine.execute(table.delete())
+
+
+    def load_tables_from_json(self, file_path):
+        clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
+        data = json.load(open(file_path, 'r'))
+
+        for table in data.keys():
+            vals_to_insert = []
+
+            for d in data[table]["data"]:
+                vals_to_insert.append(dict(zip(data[table]["head"], d)))
+
+            table_object = clsmembers[table]
+
+            ins = insert(table_object).values(vals_to_insert)
+            self.engine.connect().execute(ins)
+
+        self.session.commit()
