@@ -39,9 +39,7 @@ def truncate_database():
 
 
 def init_fisher():
-    from sqlalchemy import text
     from manager.dbmanager import DBManager
-
 
     try:
         base = DBManager()
@@ -51,21 +49,6 @@ def init_fisher():
         sys.exit(1)
 
     base.load_tables_from_json("fisher.json")
-#    clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
-#    data = json.load(open("fisher.json", 'r'))
-#
-#    for table in data.keys():
-#        vals_to_insert = []
-#
-#        for d in data[table]["data"]:
-#            vals_to_insert.append(dict(zip(data[table]["head"], d)))
-#
-#        table_object = clsmembers[table]
-#
-#        ins = insert(table_object).values(vals_to_insert)
-#        base.engine.connect().execute(ins)
-#
-#    base.session.commit()
 
 
 def init_kospi():
