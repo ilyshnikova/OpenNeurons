@@ -92,7 +92,6 @@ class DataSetComponent(Base):
     component_type = Column(String(STRLEN))
     component_index = Column(Integer)
     component_name = Column(String(STRLEN))
-    tag = Column(String(STRLEN))
     datasetvalues = relationship(
         'DataSetValues',
         backref=backref('datasetcomponent')
