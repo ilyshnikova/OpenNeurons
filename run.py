@@ -38,7 +38,7 @@ if __name__ == '__main__':
     DB = DBManager()
     etl = ETL(manager=DB)
 ####### Ex0 - IRIS FISHER CASE
-    path='local_files/iris.csv'
+    # path='local_files/iris.csv'
     # Examples of insert data
     # cats = [Category(name='futures', description='azaza'),
     #             Category(name='call', description='azaza'),
@@ -50,17 +50,17 @@ if __name__ == '__main__':
     # etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
     # etl.load_supervised_data(path=path, ctg_name=load_data_instr["category_name"])
 
-    # Init Category before data insert
-    Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
-                             {'name': 'Europe', 'description': 'Europe', 'parent_name': 'Financial Markets'},
-                             {'name': 'Russia', 'description': 'Russia', 'parent_name': 'Europe'},
-                             {'name': 'MCX', 'description': 'Moscow Exchange', 'parent_name': 'Russia'},
-                             {'name': 'MCX Index', 'description': 'MCX Index', 'parent_name': 'MCX'},
-                             {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
-                             ])
-
-    dfMICEX = etl.get_quandl_data(ticket='MOEX',database='GOOG',start='2015-04-04', end='2017-04-04', Category=Category, SaveToDB=True)
-
+    #Init Category before data insert
+    # Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
+    #                          {'name': 'Europe', 'description': 'Europe', 'parent_name': 'Financial Markets'},
+    #                          {'name': 'Russia', 'description': 'Russia', 'parent_name': 'Europe'},
+    #                          {'name': 'MCX', 'description': 'Moscow Exchange', 'parent_name': 'Russia'},
+    #                          {'name': 'MCX Index', 'description': 'MCX Index', 'parent_name': 'MCX'},
+    #                          {'name': 'MCX:MOEX', 'description': 'MOEX Index', 'parent_name': 'MCX Index'}
+    #                          ])
+    #
+    # dfMICEX = q.get(q_ticket='GOOG/MCX_MOEX',start='2016-12-01', end='2017-01-31', Category=Category, SaveToDB=True)
+    # print(dfMICEX[2])
 
     # Get Raw data
     
