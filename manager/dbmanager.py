@@ -29,7 +29,7 @@ class DBManager:
         return {'user': config['database']['user'],
                 'password': config['database']['password'],
                 'host': config['database']['host'],
-                'db_name': config['database']['db_name']}    
+                'db_name': config['database']['db_name']}
 
     def __get_or_create(self, model, **kwargs):
         instance = self.session.query(model).filter_by(**kwargs).all()
@@ -65,7 +65,7 @@ class DBManager:
                                                   all())
                     nestedlevel += 1
                     ParentCategory = self.__get_parent_category(ParentCategory, nestedlevel)
-                    AllCategory = AllCategory.append(ParentCategory, ignore_index=True)       
+                    AllCategory = AllCategory.append(ParentCategory, ignore_index=True)
         return AllCategory
 
     def __set_parent_category(self, dfCategory, category_name = None, nested_level = 0):
@@ -101,7 +101,7 @@ class DBManager:
                                         {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.6, 'string_value': None, 'tag': '9'},
                                         {'rates_name': 'X1 (Длина чашелистника)', 'date': None, 'float_value': 4.7, 'string_value': None, 'tag': '10'}])
        return [Category, Rates, RatesHistory]
-    
+
     def get_raw_data(self, RateName, CategoryName = None, Tag = None):
         # seems not to be working with parent depth more than 1 
         # Category name?? Tag ??
@@ -120,7 +120,7 @@ class DBManager:
                                   all())
 
         dfCategory = self.__get_parent_category(dfCategory)
-        
+
         dfRates = pd.DataFrame(self.session.query(Rates.id, Rates.name, Rates.category_id, Category.name.label('category_name'), Rates.tag, Source.name.label('source'), Rates.source_id).\
                                filter(Rates.name == RateName).\
                                join(Source).\
@@ -134,23 +134,23 @@ class DBManager:
 
         return [dfCategory, dfRates, dfRatesHistory]
 
-    def save_raw_data(self,category, rates, rateshistory, source):
+    def save_raw_data(self, category, rates, rateshistory, source):
         NewRawData = []
-        for rrh in rateshistory[['rates_name','date', 'float_value', 'string_value', 'tag']].values:
-            rowc = self.__set_parent_category(dfCategory = category, \
-                                       category_name =  rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
-            rows = self.__get_or_create(Source, \
-                                       name = source)                           
-            rowr = self.__get_or_create(Rates, \
-                                       name = rrh[0], \
-                                       source = rows , \
-                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0], \
+        for rrh in rateshistory[['rates_name', 'date', 'float_value', 'string_value', 'tag']].values:
+            rowc = self.__set_parent_category(dfCategory = category,
+                                       category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
+            rows = self.__get_or_create(Source,
+                                       name = source)
+            rowr = self.__get_or_create(Rates,
+                                       name = rrh[0],
+                                       source = rows,
+                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0],
                                        category = rowc)
-            rowrh = self.__get_or_create(RatesHistory, \
-                                        date = rrh[1], \
-                                        float_value = rrh[2], \
-                                        string_value = rrh[3], \
-                                        tag = rrh[4], \
+            rowrh = self.__get_or_create(RatesHistory,
+                                        date = rrh[1],
+                                        float_value = rrh[2],
+                                        string_value = rrh[3],
+                                        tag = rrh[4],
                                         rates = rowr)
             NewRawData.append(rowrh)
 
