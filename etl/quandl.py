@@ -14,8 +14,8 @@ api_key = ""
 
 
 class Quandl:
-    def __init__(self):
-        self.start = '2000-01-01'
+    def __init__(self, period_start):
+        self.start = period_start
         self.end = datetime.date.today().strftime("%Y-%m-%d")
         self.manager = DBManager()
 
@@ -27,7 +27,6 @@ class Quandl:
             category = (pd.DataFrame(portfolio[asset_name]).T).reset_index()
             category = category.iloc[:-1, 1:]
             q_ticket = portfolio[asset_name]['source']
-            print('send')
             self.get(Category=category, q_ticket=q_ticket, start=self.start, end=self.end)
 
     def get_info(self, q_ticket):
@@ -38,7 +37,6 @@ class Quandl:
             r = requests.get(url)
             z = zipfile.ZipFile(BytesIO(r.content))
             df = pd.read_csv(z.open(name=database + '-datasets-codes.csv'), header=None)
-            print(df)
             return df[df[0].str.contains(q_ticket + '$')]
 
         except Exception as e:
@@ -50,25 +48,18 @@ class Quandl:
         else:
             raise Exception("Correct the quandl ticket")
 
-        if dfData.empty == True:
-            raise Exception('Package is empty')
-
         Rates = pd.DataFrame()
         RatesHistory = pd.DataFrame()
 
         trg_category = Category['name'].iloc[-1:].values[0]
-        print('trg_category:', trg_category)
 
         for rate in dfData.columns.values[1:]:
             Rates = Rates.append({'name': trg_category + "_" + rate, 'category_name': trg_category, 'tag': None}, ignore_index=True)
-            print(Rates)
             for idx in range(dfData.shape[0]):
                 RatesHistory = RatesHistory.append(
                     {'rates_name': trg_category + "_" + rate, 'date': dfData['Date'][idx], 'float_value': dfData[rate][idx],
                      'string_value': None, 'tag': None}, ignore_index=True)
-            print(RatesHistory)
 
-        print("Category:", Category)
         if SaveToDB:
             self.manager.save_raw_data(category=Category, rates=Rates, rateshistory=RatesHistory, source='Quandl')
 

@@ -24,7 +24,7 @@ class ETL:
         self._update_external_data()
 
     def _update_external_data(self):
-        qu = Quandl()
+        qu = Quandl(period_start='2000-01-01')
         qu.update()
 
     def __get_or_create(self, model, **kwargs):
