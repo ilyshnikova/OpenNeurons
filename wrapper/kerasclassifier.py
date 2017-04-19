@@ -3,10 +3,10 @@ from .inheritance import Classifier
 
 class KerasClassifier(Classifier):
     def __init__(self, name, args):
-        super().__init__(self, name, approach='keras')
+        super().__init__(name, approach='keras')
         self.keras = __import__(self.approach)
-        self.build_args = args.get['build_args']
-        self.compile_args = args.get['compile_args']
+        self.build_args = args.get('build_args')
+        self.compile_args = args.get('compile_args')
         self.model = self.build_model() if args else self.load_model()
 
     def save_model(self):
