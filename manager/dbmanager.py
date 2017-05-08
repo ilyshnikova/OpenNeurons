@@ -138,23 +138,24 @@ class DBManager:
 
         return [dfCategory, dfRates, dfRatesHistory]
 
-    def save_raw_data(self,category, rates, rateshistory, source):
+    def save_raw_data(self, category, rates, rateshistory, source):
         NewRawData = []
-        for rrh in rateshistory[['rates_name','date', 'float_value', 'string_value', 'tag']].values:
-            rowc = self.__set_parent_category(dfCategory = category, \
-                                       category_name =  rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
-            rows = self.__get_or_create(Source, \
+
+        for rrh in rateshistory[['rates_name', 'date', 'float_value', 'string_value', 'tag']].values:
+            rowc = self.__set_parent_category(dfCategory = category,
+                                       category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
+            rows = self.__get_or_create(Source,
                                        name = source)
-            rowr = self.__get_or_create(Rates, \
-                                       name = rrh[0], \
-                                       source = rows , \
-                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0], \
+            rowr = self.__get_or_create(Rates,
+                                       name = rrh[0],
+                                       source = rows,
+                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0],
                                        category = rowc)
-            rowrh = self.__get_or_create(RatesHistory, \
-                                        date = rrh[1], \
-                                        float_value = rrh[2], \
-                                        string_value = rrh[3], \
-                                        tag = rrh[4], \
+            rowrh = self.__get_or_create(RatesHistory,
+                                        date = rrh[1],
+                                        float_value = rrh[2],
+                                        string_value = rrh[3],
+                                        tag = rrh[4],
                                         rates = rowr)
             NewRawData.append(rowrh)
 

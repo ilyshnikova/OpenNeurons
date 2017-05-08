@@ -6,18 +6,26 @@ import numpy as np
 from zeep import Client
 from models.models import *
 from manager.dbmanager import DBManager
+from etl.quandl import Quandl
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-# from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 
 from io import StringIO
 import os
 
+
 class ETL:
     def __init__(self, manager: DBManager):
         self.manager = manager
+        # Up-to-date data from external resources
+        self._update_external_data()
+
+    def _update_external_data(self):
+        qu = Quandl(period_start='2000-01-01')
+        qu.update()
 
     def __get_or_create(self, model, **kwargs):
         instance = self.manager.session.query(model).filter_by(**kwargs).first()
@@ -34,52 +42,52 @@ class ETL:
             return datetime.datetime.strptime(inp_date, '%Y%m')
         except:
             return datetime.datetime.strptime(inp_date, '%Y%m%d')
-        
+
     def get_Kospi_data_ex1(self, path, sheetname = 'DATA', Source = 'KRX', SaveToDB = True):
         # 1. Retrieve data from source
         KospiData = pd.read_excel(path, sheetname)
         # 2. Proceed and filter retrieved data
         KospiData = KospiData[['DATE1', 'YEAR', 'MONTH', 'STRIKE', 'cBID_V', 'cASK_V', 'cSTL_V', 'pBID_V', 'pASK_V', 'pSTL_V', 'fRIC', 'fSTL_V']].\
             dropna(how='all')
-        
+
         OptionsData = KospiData[['DATE1', 'YEAR', 'MONTH', 'STRIKE', 'cBID_V', 'cASK_V', 'cSTL_V', 'pBID_V', 'pASK_V', 'pSTL_V']].\
             dropna(how='all', subset=['cBID_V', 'cASK_V', 'cSTL_V', 'pBID_V', 'pASK_V', 'pSTL_V']).\
             drop_duplicates()
-        
+
         FuturesData = KospiData[['DATE1', 'YEAR', 'MONTH', 'fSTL_V']].\
             dropna(how='all', subset=['fSTL_V']).\
             drop_duplicates()
-        
+
         # 3. Init DataFrames = Category, Rates, RatesHistory before data insertion ( for Options and Futures)
         Category = pd.DataFrame([{'name': 'Financial Markets', 'description': 'Financial Markets Data Branch'},
-                        {'name': 'Asia', 'description': 'Asia', 'parent_name': 'Financial Markets' },
-                        {'name': 'Korea', 'description': 'Korea', 'parent_name': 'Asia' },
-                        {'name': 'KRX', 'description': 'Korea Stock Exchange', 'parent_name': 'Korea' },
-                        {'name': 'KRX Derivatives', 'description': 'KRX Derivatives', 'parent_name': 'KRX' },
-                        ])
+                                 {'name': 'Asia', 'description': 'Asia', 'parent_name': 'Financial Markets' },
+                                 {'name': 'Korea', 'description': 'Korea', 'parent_name': 'Asia' },
+                                 {'name': 'KRX', 'description': 'Korea Stock Exchange', 'parent_name': 'Korea' },
+                                 {'name': 'KRX Derivatives', 'description': 'KRX Derivatives', 'parent_name': 'KRX' },
+                                 ])
         Rates = pd.DataFrame()
         RatesHistory = pd.DataFrame()
-        
+
         # 4. Insert Futures category in  Dataframe Category
         if FuturesData.empty == False:
             Category = Category.append([{'name': 'KOSPI Futures', 'description': 'KOSPI Index Futures', 'parent_name': 'KRX Derivatives' }])
-        
+
         # 5. Import KOSPI Futures prices into Category, Rates, RatesHisory
         for row in FuturesData[['DATE1', 'YEAR', 'MONTH', 'fSTL_V']].values:
           Category = Category.append([{'name': 'KOSPI FUT Y:{}'.format(row[1]), 'description': 'KOSPI FUTURES YEAR: {}'.format(row[1]), 'parent_name': 'KOSPI Futures' },
-                                                     {'name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI FUTURES {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI FUT Y:{}'.format(row[1])}])
+                                      {'name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI FUTURES {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI FUT Y:{}'.format(row[1])}])
           Rates = Rates.append([{'name': 'FUTSPriceKOSPI({}/{})'.format(row[2], row[1]), 'category_name': 'KOSPI FUT {}/{}'.format(row[2],row[1]), 'tag': 'KOSPI FUT {}/{}'.format(row[2], row[1]), 'source' : Source}])
           RatesHistory = RatesHistory.append([{'rates_name': 'FUTSPriceKOSPI({}/{})'.format(row[2], row[1]), 'date': row[0], 'float_value' : row[3], 'string_value' : None, 'tag': 'KOSPI FUT {}/{} price date: {}'.format(row[2], row[1], row[0])}])
-        
+
         # 6. Insert Options category in Dataframe Category
         if OptionsData.empty == False:
             Category = Category.append([{'name': 'KOSPI Options', 'description': 'KOSPI Index Options', 'parent_name': 'KRX Derivatives' }])
-            
+
         # 7. Import KOSPI Options prices into Category, Rates, RatesHisory
         for row in OptionsData[['DATE1', 'YEAR', 'MONTH', 'STRIKE',  'cBID_V', 'cASK_V', 'cSTL_V', 'pBID_V', 'pASK_V', 'pSTL_V']].values:
             Category = Category.append([{'name': 'KOSPI OPT Y:{}'.format(row[1]), 'description': 'KOSPI OPTIONS YEAR: {}'.format(row[1]), 'parent_name': 'KOSPI Options' },
-                                                       {'name': 'KOSPI OPT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI OPTIONS {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI OPT Y:{}'.format(row[1])},
-                                                       {'name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'description': 'KOSPI OPTIONS {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'parent_name': 'KOSPI OPT {}/{}'.format(row[2],row[1])},])
+                                        {'name': 'KOSPI OPT {}/{}'.format(row[2],row[1]), 'description': 'KOSPI OPTIONS {}/{}'.format(row[2],row[1]), 'parent_name': 'KOSPI OPT Y:{}'.format(row[1])},
+                                        {'name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'description': 'KOSPI OPTIONS {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'parent_name': 'KOSPI OPT {}/{}'.format(row[2],row[1])},])
             Rates = Rates.append([{'name': 'OptPriceCallBid({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} BID PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
                                    {'name': 'OptPriceCallAsk({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} ASK PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
                                    {'name': 'OptPriceCallSetl({}/{}){}'.format(row[2], row[1], row[3]), 'category_name': 'KOSPI OPT {}/{} STRIKE = {}'.format(row[2],row[1], row[3]), 'tag': 'KOSPI CALL OPTION {}/{} STRIKE = {} SETTLEMENT PRICE'.format(row[2],row[1], row[3]), 'source' : Source},
@@ -94,16 +102,16 @@ class ETL:
                                                  {'rates_name': 'OptPricePutAsk({}/{}){}'.format(row[2], row[1], row[3]), 'date': row[0], 'float_value' : row[3], 'string_value' : None, 'tag': 'KOSPI PUT OPTION {}/{} STRIKE = {} ASK PRICE date: {}'.format(row[2], row[1], row[3], row[0])},
                                                  {'rates_name': 'OptPricePutSetl({}/{}){}'.format(row[2], row[1], row[3]), 'date': row[0], 'float_value' : row[3], 'string_value' : None, 'tag': 'KOSPI PUT OPTION {}/{} STRIKE = {} SETL PRICE date: {}'.format(row[2], row[1], row[3], row[0])},
                                                  ])
-    
+
         Category = Category.drop_duplicates()
         Rates = Rates.drop_duplicates()
         RatesHistory = RatesHistory.drop_duplicates()
-        
+
         # 6. Save to database prepared data
         if SaveToDB:
             self.manager.save_raw_data(Category, Rates, RatesHistory, Source)
         return [Category, Rates, RatesHistory]
-    
+
     def get_JapanExchange_Derivatives_ex2(self, path):
         try:
             rates = []
@@ -151,7 +159,7 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
-    
+
     def get_CBR_ex3(self, start: datetime.datetime, end: datetime.datetime):
         try:
             client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
@@ -190,7 +198,7 @@ class ETL:
             laparams = LAParams()
             device = TextConverter(rsrcmgr, sio, codec=codec, laparams=laparams)
             interpreter = PDFPageInterpreter(rsrcmgr, device)
-            
+
             Category = pd.DataFrame([{'Name': 'CASE-1', 'Description': 'CASE #1 RAW DATA'},
                                      {'Name': 'Doc scans', 'Description': 'Documents scan row data', 'Parent_id': 1 }],
                       index=[1, 2])
@@ -201,15 +209,15 @@ class ETL:
 
             source_files = [f.lower() for f in os.listdir(scan_path) if file_extention in f.lower()]
 
-            for f in source_files:       
-                fp = open(scan_path + f, 'rb')          
+            for f in source_files:
+                fp = open(scan_path + f, 'rb')
                 for page in PDFPage.get_pages(fp):
                     interpreter.process_page(page)
                 fp.close()
                 # Get text from StringIO
                 text = sio.getvalue()
                 #print(text)
-                RatesHistory= RatesHistory.append([{'rates_id': 1, 'date': None, 'float_value': None, 'string_value': text, 'tag': f}])           
+                RatesHistory= RatesHistory.append([{'rates_id': 1, 'date': None, 'float_value': None, 'string_value': text, 'tag': f}])
             # Cleanup
             device.close()
             sio.close()
@@ -219,6 +227,7 @@ class ETL:
             #return (Category, Rates, RatesHistory)
 
 #IL would be better to have this stuff as 'get_IrisFisher_Data'
+
     def load_supervised_data(self, path, ctg_name):
         try:
             source = self.__get_or_create(
@@ -275,6 +284,7 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
+
 '''
 #example of usage
 
