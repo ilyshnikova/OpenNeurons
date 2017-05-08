@@ -296,7 +296,8 @@ class DBManager:
 
     def load_tables_from_json(self, file_path):
         clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
-        data = json.load(open(file_path, 'r'))
+        with open(file_path, 'r') as fh:
+            data = json.load(fh)
 
         for table in data.keys():
             vals_to_insert = []
