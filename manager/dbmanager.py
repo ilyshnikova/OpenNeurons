@@ -128,7 +128,8 @@ class DBManager:
 
         dfRatesHistory = pd.DataFrame(self.session.query(RatesHistory.rates_id, Rates.name.label('rates_name'), RatesHistory.date, RatesHistory.float_value, RatesHistory.string_value, RatesHistory.tag).\
                                       join(Rates).\
-                                      filter(Rates.name == RateName).\
+                                      filter(Rates.name == RateName). \
+                                      filter(RatesHistory.tag == Tag).\
                                       all())
 
         return [dfCategory, dfRates, dfRatesHistory]

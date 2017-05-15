@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
 
-STRLEN = 50
+STRLEN = 150
 
 
 class Base:
@@ -17,7 +17,6 @@ class Base:
 
 Base = declarative_base(cls=Base)
 
-
 class Category(Base):
     id = Column(Integer, Sequence('category_id_seq'), primary_key=True)
     name = Column(String(STRLEN))
@@ -27,7 +26,6 @@ class Category(Base):
         'Category',
         backref=backref('parent', remote_side=[id])
     )
-
 
 
 class Rates(Base):
@@ -44,10 +42,10 @@ class Rates(Base):
         backref=backref('category'))
 
 
-
 class Source(Base):
     id = Column(Integer, Sequence('source_id_seq'), primary_key=True)
     name = Column(String(STRLEN))
+
 
 class RatesHistory(Base):
     rates_id = Column(Integer, ForeignKey('rates.id'))

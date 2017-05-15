@@ -3,29 +3,49 @@ import pandas as pd
 import lxml
 import numpy as np
 
-from zeep import Client
-from models.models import *
 from manager.dbmanager import DBManager
-from etl.quandl import Quandl
+from etl.yahoo_finance import YahooFinance
+from etl.quandl        import Quandl
+from models.models     import *
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
+from pdfminer.pdfpage   import PDFPage
+from pdfminer.layout    import LAParams
 
-from io import StringIO
+from io   import StringIO
+from zeep import Client
+from lxml import html
+
+import numpy as np
+import requests
+
+import json
 import os
+
+
+from lxml import html
 
 
 class ETL:
     def __init__(self, manager: DBManager):
         self.manager = manager
-        # Up-to-date data from external resources
-        self._update_external_data()
 
-    def _update_external_data(self):
-        qu = Quandl(period_start='2000-01-01')
-        qu.update()
+    def update_external_data(self, start='2000-01-01'):
+        with open('portfolio.json') as data_file:
+            portfolio = json.load(data_file)
+
+        for asset_name in list(portfolio.keys()):
+            portfolio_asset = portfolio[asset_name]
+            asset_ticket = portfolio[asset_name]['ticket']
+
+            if portfolio[asset_name]['source'] == 'Quandl':
+                qu = Quandl(period_start=start)
+                qu.update(asset=portfolio_asset, ticket=asset_ticket)
+
+            elif portfolio[asset_name]['source'] == 'Yahoo Finance':
+                yahoofin = YahooFinance(period_start=start)
+                yahoofin.update(asset=portfolio_asset, ticket=asset_ticket)
 
     def __get_or_create(self, model, **kwargs):
         instance = self.manager.session.query(model).filter_by(**kwargs).first()
@@ -42,6 +62,97 @@ class ETL:
             return datetime.datetime.strptime(inp_date, '%Y%m')
         except:
             return datetime.datetime.strptime(inp_date, '%Y%m%d')
+
+    def __proc_wdbd(self, data, start_slice, end_slice, inf=False):
+        data = data.iloc[:, start_slice:end_slice]
+        col_nms = data.columns.values
+        year = col_nms[0][4:8]
+        data = data[data[col_nms[0]] != 0][:-3]
+        wd = data[data[col_nms[1]] == 1][col_nms[0]]
+        bd = data[data[col_nms[1]] == 0][col_nms[0]]
+        if inf:
+            print('Year {}:'.format(year))
+            print('MOEX weekend days =', len(wd))
+            print('MOEX business days =', len(bd))
+            print('Total days =', len(wd) + len(bd))
+        return wd, bd
+
+    def __save_days(self, day_type, year, data):
+        if day_type == 'bd':
+            day_fl = 'BD'
+            day_type = 'Business days'
+        elif day_type == 'wd':
+            day_fl = 'WD'
+            day_type = 'Weekend days'
+
+        category = pd.DataFrame([{'name': 'Exchanges work calendar', 'description': 'Business and Weekend days'},
+                                 {'name': 'MCX', 'description': 'Moscow Exchange',
+                                  'parent_name': 'Exchanges work calendar'},
+                                 {'name': 'MCX {0}'.format(day_type),
+                                  'description': 'Moscow Exchange {0}'.format(day_type), 'parent_name': 'MCX'}
+                                 ])
+        rate = pd.DataFrame([{'name': 'MCX_{0}_{1}'.format(day_fl, year),
+                              'category_name': 'MCX {0}'.format(day_type),
+                              'source': 'MOEX.COM',
+                              'tag': '{0} in {1} year'.format(day_type, year)}
+                             ], index=[1])
+
+        df = pd.DataFrame()
+        data.reset_index(drop=True, inplace=True)
+
+        for idx in range(data.shape[0]):
+            df = df.append(
+                {'rates_name': 'MCX_{0}_{1}'.format(day_fl, year), 'date': data[idx].strftime("%Y-%m-%d"),
+                 'float_value': None, 'string_value': data[idx].strftime("%Y-%m-%d"), 'tag': ""},
+                ignore_index=True)
+
+        self.manager.save_raw_data(category, rate, df, source='MOEX.COM')
+
+    def load_moex_workingdays(self):
+        data = pd.read_excel('MICEX_BD.xlsx')
+        labels = ['Unnamed: 2', 'Unnamed: 5', 'Unnamed: 8', 'Unnamed: 11', 'Unnamed: 14', 'Unnamed: 17', 'Unnamed: 18', 'Unnamed: 19']
+        data.drop(labels, axis=1, inplace=True)
+        data.fillna(0, inplace=True)
+
+        wd2012, bd2012 = self.__proc_wdbd(data=data, start_slice=0, end_slice=2)
+        wd2013, bd2013 = self.__proc_wdbd(data=data, start_slice=2, end_slice=4)
+        wd2014, bd2014 = self.__proc_wdbd(data=data, start_slice=4, end_slice=6)
+        wd2015, bd2015 = self.__proc_wdbd(data=data, start_slice=6, end_slice=8)
+        wd2016, bd2016 = self.__proc_wdbd(data=data, start_slice=8, end_slice=10)
+        wd2017, bd2017 = self.__proc_wdbd(data=data, start_slice=10, end_slice=12)
+
+        self.__save_days(day_type='bd', year='2012', data=bd2012)
+        self.__save_days(day_type='bd', year='2013', data=bd2013)
+        self.__save_days(day_type='bd', year='2014', data=bd2014)
+        self.__save_days(day_type='bd', year='2015', data=bd2015)
+        self.__save_days(day_type='bd', year='2016', data=bd2016)
+        self.__save_days(day_type='bd', year='2017', data=bd2017)
+
+        self.__save_days(day_type='wd', year='2012', data=wd2012)
+        self.__save_days(day_type='wd', year='2013', data=wd2013)
+        self.__save_days(day_type='wd', year='2014', data=wd2014)
+        self.__save_days(day_type='wd', year='2015', data=wd2015)
+        self.__save_days(day_type='wd', year='2016', data=wd2016)
+        self.__save_days(day_type='wd', year='2017', data=wd2017)
+
+    def cbr_refinancing_rate(self):
+        url = "https://www.finam.ru/analysis/macroevent/?dind=0&dpsd=1817681&fso=date+desc&str=1&ind=710&stdate=16.09.2013&endate=28.04.2017&sema=1&seman=5&timeStep=1"
+        r = requests.get(url)
+        tree = html.fromstring(r.text)
+        dates = np.asarray([date.text for date in tree.xpath('//td[@class="sm"]')])
+        rates = np.asarray([rate.text for rate in tree.xpath('//td[@align="right"]')])
+        rates = rates[rates != np.array(None)][::2]
+        rates = np.asarray([float(rate.split()[0]) for rate in rates])
+        data = pd.DataFrame({'date': dates, 'rate': rates})
+
+
+        return data
+
+    def get_CBR_key_rate(self):
+        client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
+        resp = client.service.MainInfoXML()
+        bank_rate = float(resp.getchildren()[0].text)
+        return bank_rate
 
     def get_Kospi_data_ex1(self, path, sheetname = 'DATA', Source = 'KRX', SaveToDB = True):
         # 1. Retrieve data from source

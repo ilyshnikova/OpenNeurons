@@ -53,7 +53,7 @@ if __name__ == '__main__':
                              ])
 
     # Get single data from Quandl
-    dfMICEX = q.get(q_ticket='GOOG/MCX_MOEX',start='2016-12-01', end='2017-01-31', Category=Category, SaveToDB=True)
+    dfMICEX = q.get(ticket='GOOG/MCX_MOEX',start='2016-12-01', end='2017-01-31', Category=Category, SaveToDB=True)
 
 ##### SAVE RAW DATA
 
