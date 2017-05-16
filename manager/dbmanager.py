@@ -2,6 +2,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, aliased, joinedload
 
+import json
+import sys, inspect
+from sqlalchemy import insert
+
 from models.models import *
 
 import pandas as pd
@@ -103,7 +107,7 @@ class DBManager:
        return [Category, Rates, RatesHistory]
 
     def get_raw_data(self, RateName, CategoryName = None, Tag = None):
-        # seems not to be working with parent depth more than 1 
+        # seems not to be working with parent depth more than 1
         # Category name?? Tag ??
         ParentCategory = aliased(Category)
 
@@ -136,6 +140,7 @@ class DBManager:
 
     def save_raw_data(self, category, rates, rateshistory, source):
         NewRawData = []
+
         for rrh in rateshistory[['rates_name', 'date', 'float_value', 'string_value', 'tag']].values:
             rowc = self.__set_parent_category(dfCategory = category,
                                        category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
@@ -283,3 +288,27 @@ class DBManager:
             self.session.rollback()
             raise e
 
+    def drop_all_tables(self):
+        metadata = Base.metadata
+        all_tables = list(reversed(metadata.sorted_tables))
+        for table in all_tables:
+            self.engine.execute(table.delete())
+
+
+    def load_tables_from_json(self, file_path):
+        clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
+        with open(file_path, 'r') as fh:
+            data = json.load(fh)
+
+        for table in data.keys():
+            vals_to_insert = []
+
+            for d in data[table]["data"]:
+                vals_to_insert.append(dict(zip(data[table]["head"], d)))
+
+            table_object = clsmembers[table]
+
+            ins = insert(table_object).values(vals_to_insert)
+            self.engine.connect().execute(ins)
+
+        self.session.commit()

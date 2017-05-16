@@ -1,4 +1,5 @@
 import sys
+from subprocess import call
 
 def print_usage():
     print("""Usage:
@@ -6,33 +7,14 @@ def print_usage():
         initdb      -   initialized database structure
         runserver   -   run Web server
         checkdeps   -   check dependencies required to run
+        initfisher  -   init fisher dataset in database
+        initkospi   -   init kospi dataset in database
+        truncatedb  -   truncate database
     """)
-
-
-def init_database():
-    from manager.dbmanager import DBManager
-    manager = DBManager()
-    manager.session.flush()
-
-
-def run_server():
-    from server.server import server_main
-    server_main()
-
-
-def check_deps():
-    # TODO use try/catch to detect all required packages
-    pass
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print_usage()
-    elif "initdb" == sys.argv[1]:
-        init_database()
-    elif "runserver" == sys.argv[1]:
-        run_server()
-    elif "checkdeps" == sys.argv[1]:
-        check_deps()
-    else:
-        print_usage()
+        exit(0)
+    script = sys.argv[1]
+    call(["python",  "manage_server/{script}.py".format(script=script)])
