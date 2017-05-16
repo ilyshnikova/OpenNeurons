@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 import numpy as np
 from models.models import Model, Model2Dataset, \
     DataSet, DataSetComponent, DataSetValues, \
-    Category, Rates, RatesHistory, Source
+    Category, Rates, RatesHistory, Source, \
+    Admins
 
 
 def get_models_pretty_list(base):
@@ -209,8 +210,7 @@ def get_rates(base, category_id, cur_rate_id):
         sources[source.id] = source.name
 
     # rates
-    s = select([Rates]). \
-        where(Rates.category_id == category_id)
+    s = select([Rates]).where(Rates.category_id == category_id)
     result = base.engine.connect().execute(s)
 
     tabs = []
@@ -242,4 +242,14 @@ def get_rates(base, category_id, cur_rate_id):
         tabs.append({'id': rate.id, 'name': rate.name})
 
     return categories, rates, tabs
+
+
+def get_user_auth(base, username):
+    s = select([Admins]).where(Admins.username == username)
+    res = base.engine.connect().execute(s)
+
+    if not res.rowcount:
+        return 'ZZZ'
+
+    return res.__iter__().__next__().auth
 

@@ -105,3 +105,8 @@ class DataSetValues(Base):
     dataset_id = Column(Integer, primary_key=True)
     vector_id = Column(Integer, primary_key=True)
     value = Column(Float)
+
+
+class Admins(Base):
+    username = Column(String(STRLEN), primary_key=True)
+    auth = Column(String(STRLEN))

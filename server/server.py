@@ -1,16 +1,17 @@
 # -*- coding: utf8 -*-
 import json
 
-from flask import Flask, send_from_directory, render_template, request
+from flask import send_from_directory, render_template, request, \
+    make_response
 
-from manager.dbmanager import DBManager
 from .helpers import add_datasets_to_model, \
     get_all_dataset_for_model, get_dataset, get_model_info, \
     get_models_pretty_list, get_rates
 
-app = Flask(__name__)
+from .env import app, base, config
 
-
+from .authorization import check_auth, authenticate, requires_auth, \
+    hash_auth
 def add_default_values(elements, req):
     for element in elements:
         value = req.args.get(element['id'])
@@ -20,19 +21,13 @@ def add_default_values(elements, req):
     return elements
 
 
-with open('config.json') as data_file:
-    config = json.load(data_file)
-
-base = DBManager()
-
-
 @app.route('/files/<path:path>')
 def send_file(path):
     return send_from_directory('files', path)
 
 
 @app.route('/')
-def ok():
+def main():
     return render_template(
         'menu.html',
         elements=[
@@ -47,6 +42,10 @@ def ok():
             {
                 'title': 'Rates',
                 'href': '/rates',
+            },
+            {
+                'title': 'Авторизироваться как администратор',
+                'href': '/authorize',
             },
         ],
     )
@@ -116,6 +115,13 @@ def show_chose_dataset():
             'default': options[0]['id'],
         },
     ]
+    import pdb;pdb.set_trace()
+    auth = request.cookies.get("auth", '')
+    username = request.cookies.get("login", '')
+    is_admin = 0
+    if check_auth(username, auth):
+        is_admin = 1
+
 
     if request.args.get('result') == '1':
         model_id = request.args.get('models')
@@ -128,11 +134,13 @@ def show_chose_dataset():
             cb_list=datasets,
             datasets_ids=','.join(checked_datasets),
             result=2,
+            is_admin=is_admin,
         )
     elif request.args.get('result') == '2':
         model_id = request.args.get('models')
         datasets_ids = request.args.get('datasets_ids').split(',')
-        add_datasets_to_model(base, model_id, datasets_ids)
+        if is_admin == 1:
+            add_datasets_to_model(base, model_id, datasets_ids)
 
         datasets, checked_datasets = get_all_dataset_for_model(
             base,
@@ -146,6 +154,7 @@ def show_chose_dataset():
             cb_list=datasets,
             datasets_ids=','.join(checked_datasets),
             result=2,
+            is_admin=is_admin,
         )
 
     else:
@@ -183,6 +192,43 @@ def rates():
             return_url=return_url,
         )
 
+@app.route('/authorize')
+def authorize_as_admin():
+    elements = [
+        {
+            'title': 'Логин',
+            'id': 'login',
+            'type': 'input',
+        }, {
+            'title': 'Пароль',
+            'id': 'password',
+            'type': 'input',
+        }
+    ]
+    return_url = "/"
+
+    if request.args.get('result'):
+        auth = request.args.get("password") # не передавать прям вот в таком виде
+        username = request.args.get("login")
+        if check_auth(username, auth, True):
+            resp = make_response(main())
+            resp.set_cookie('auth', hash_auth(auth))
+            resp.set_cookie('login', username)
+            return resp
+        else:
+            return render_template(
+                "login.html",
+                elements=elements,
+                return_url=return_url,
+                error=1
+            )
+    else:
+        return render_template(
+            "login.html",
+            elements=elements,
+            return_url=return_url,
+        )
+
 
 def server_main():
     app.jinja_env.tests['equalto'] = lambda value, other: value == other
@@ -194,7 +240,5 @@ def server_main():
         threaded=False,
     )
 
-
 if __name__ == "__main__":
     server_main()
-

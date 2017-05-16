@@ -1,0 +1,18 @@
+<html>
+	<head>
+		{% include "basic-js-imports.tmpl" %}
+	</head>
+	<body>
+		<center>
+			<div style="align:center;margin-top:5%; margin-left:25%; width=50%" class="col-lg-6" >
+                <span><font size="6">Войдите в систему.</font></span>
+                    {% if error == 1 %}
+	        			<span class="input-group-addon"> Ошибка</span>
+	    	    		<span colour=red> Не верный пароль или имя пользователя. </span>
+                    {% endif %}
+
+			    {% include "input.tmpl" %}
+            </div>
+		</center>
+	</body>
+</html>

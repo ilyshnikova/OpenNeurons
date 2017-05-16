@@ -7,9 +7,16 @@
 			<div style="align:center;margin-top:15%; margin-left:25%; width=50%" class="col-lg-6" >
 				{% include "input.tmpl" %}
             </div>
-			<div style="align:center;margin-top:15%; margin-left:25%; width=50%" class="col-lg-6" >
+
+			<div style="align:center; margin-left:25%; width=50%" class="col-lg-6" >
+            {% if is_admin == 0%}
+                    <fieldset disabled>
+            {% endif%}
 				{% include "checkbox_list.tmpl" %}
-			</div>
+            </div>
+            {% if is_admin == 0%}
+                </fieldset>
+            {% endif%}
 		</center>
 	</body>
 </html>
