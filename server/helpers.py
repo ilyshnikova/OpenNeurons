@@ -1,11 +1,10 @@
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 from models.models import Model, Model2Dataset, \
     DataSet, DataSetComponent, DataSetValues, \
     Category, Rates, RatesHistory, Source, \
     Admins
-
 
 def get_models_pretty_list(base):
     s = select([Model])
@@ -36,14 +35,17 @@ def get_model_info(base, model_id):
     for model in models:
         model_info = [{
                 'title': 'Model name',
-                'value': model[0].model_name
+                'value': model[0].model_name,
+                'id': 'model_name'
             },
             {
                 'title': 'Description',
                 'value': model[0].description,
+                'id': 'description'
             }, {
                 'title': 'Model type',
                 'value': model[0].model_type,
+                'id': 'model_type',
             }]
 
         s = select([DataSet]).where(DataSet.id == model[0].id)
@@ -68,6 +70,12 @@ def get_model_info(base, model_id):
             )
 
     return model_info, dataset_list
+
+def update_model(base, model_id, new_model_name, new_description, new_model_type):
+    upd = update(Model).where(Model.id == model_id).\
+            values(model_name = new_model_name, description = new_description, model_type = new_model_name)
+
+    base.engine.connect().execute(upd)
 
 
 def get_dataset(base, dataset_id):

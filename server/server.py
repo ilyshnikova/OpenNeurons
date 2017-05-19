@@ -6,12 +6,13 @@ from flask import send_from_directory, render_template, request, \
 
 from .helpers import add_datasets_to_model, \
     get_all_dataset_for_model, get_dataset, get_model_info, \
-    get_models_pretty_list, get_rates
+    get_models_pretty_list, get_rates, update_model
 
 from .env import app, base, config
 
 from .authorization import check_auth, authenticate, requires_auth, \
-    hash_auth
+    hash_auth, is_admin
+
 def add_default_values(elements, req):
     for element in elements:
         value = req.args.get(element['id'])
@@ -53,6 +54,15 @@ def main():
 
 @app.route('/models')
 def show_models():
+    admin = is_admin(request)
+    if request.args.get("update"):
+        if admin:
+            update_model(base, request.args.get("model_id"), request.args.get("model_name"), request.args.get("description"), request.args.get("model_type"));
+        else:
+            return authorize_as_admin()
+
+
+
     options = get_models_pretty_list(base)
     print(options)
 
@@ -76,6 +86,8 @@ def show_models():
             model_desc=model_info,
             datasets=datasets,
             return_url=return_url,
+            is_admin=admin,
+            model_id=request.args.get('models')
         )
     else:
         return render_template(
@@ -115,13 +127,8 @@ def show_chose_dataset():
             'default': options[0]['id'],
         },
     ]
-    import pdb;pdb.set_trace()
-    auth = request.cookies.get("auth", '')
-    username = request.cookies.get("login", '')
-    is_admin = 0
-    if check_auth(username, auth):
-        is_admin = 1
 
+    admin = is_admin(request)
 
     if request.args.get('result') == '1':
         model_id = request.args.get('models')
@@ -134,7 +141,7 @@ def show_chose_dataset():
             cb_list=datasets,
             datasets_ids=','.join(checked_datasets),
             result=2,
-            is_admin=is_admin,
+            is_admin=admin,
         )
     elif request.args.get('result') == '2':
         model_id = request.args.get('models')
@@ -154,7 +161,7 @@ def show_chose_dataset():
             cb_list=datasets,
             datasets_ids=','.join(checked_datasets),
             result=2,
-            is_admin=is_admin,
+            is_admin=admin,
         )
 
     else:

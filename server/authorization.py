@@ -32,3 +32,13 @@ def requires_auth(f):
             return authenticate()
         return f(*args, **kwargs)
     return decorated
+
+
+def is_admin(request):
+    auth = request.cookies.get("auth", '')
+    username = request.cookies.get("login", '')
+    is_admin = 0
+    if check_auth(username, auth):
+        is_admin = 1
+
+    return is_admin

@@ -42,7 +42,8 @@
 		{% endfor %}
 		<input type=hidden name=result value={{result if result != None else 1}} />
         <br>
-		<button type="submit" class="btn btn-default" id=submit_button >Отправить</button>
+
+		<button type="submit" class="btn btn-default" id=submit_button name="send">Отправить</button>
 		{% if return_url %}
 			<button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
 		{% endif %}
