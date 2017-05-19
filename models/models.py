@@ -5,7 +5,6 @@ from sqlalchemy import Column, Integer, String, ForeignKey, \
 
 STRLEN = 1000
 
-
 class Base:
     @declared_attr
     def __tablename__(cls):
