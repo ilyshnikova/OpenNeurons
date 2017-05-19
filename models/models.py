@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import Column, Integer, String, ForeignKey, \
     Date, Float, Sequence
 
-STRLEN = 150
+STRLEN = 1000
 
 
 class Base:
