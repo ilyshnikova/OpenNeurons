@@ -187,29 +187,30 @@ class DBManager:
                 ModelData.append(dsvalue)
                 vec_id = vec_id + 1
 
-        for comp_name in y:
-            vec_id = 0
-            for comp_val in y[comp_name]:
-                modelr = self.__get_or_create(Model,
-                                              model_name=model['model_name'],
-                                              description=model['description'],
-                                              model_type=model['type'])
-                datasetr = self.__get_or_create(DataSet, name=dataset_name)
-                model2dataset = self.__get_or_create(Model2Dataset,
-                                                     model_id=modelr.id,
-                                                     dataset_id=datasetr.id)
-                dscomponent = self.__get_or_create(DataSetComponent,
+        if y is not None:
+            for comp_name in y:
+                vec_id = 0
+                for comp_val in y[comp_name]:
+                    modelr = self.__get_or_create(Model,
+                                                  model_name=model['model_name'],
+                                                  description=model['description'],
+                                                  model_type=model['type'])
+                    datasetr = self.__get_or_create(DataSet, name=dataset_name)
+                    model2dataset = self.__get_or_create(Model2Dataset,
+                                                         model_id=modelr.id,
+                                                         dataset_id=datasetr.id)
+                    dscomponent = self.__get_or_create(DataSetComponent,
+                                                       dataset_id=datasetr.id,
+                                                       component_type='O',
+                                                       component_index=str(comp_name)[-1],
+                                                       component_name=str(comp_name))
+                    dsvalue = self.__get_or_create(DataSetValues,
+                                                   component_id=dscomponent.id,
                                                    dataset_id=datasetr.id,
-                                                   component_type='O',
-                                                   component_index=str(comp_name)[-1],
-                                                   component_name=str(comp_name))
-                dsvalue = self.__get_or_create(DataSetValues,
-                                               component_id=dscomponent.id,
-                                               dataset_id=datasetr.id,
-                                               vector_id=vec_id,
-                                               value=comp_val.astype(float))
-                ModelData.append(dsvalue)
-                vec_id = vec_id + 1
+                                                   vector_id=vec_id,
+                                                   value=comp_val.astype(float))
+                    ModelData.append(dsvalue)
+                    vec_id = vec_id + 1
 
         try:
             self.session.add_all(ModelData)

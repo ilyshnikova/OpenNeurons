@@ -143,10 +143,54 @@ class ETL:
         rates = np.asarray([rate.text for rate in tree.xpath('//td[@align="right"]')])
         rates = rates[rates != np.array(None)][::2]
         rates = np.asarray([float(rate.split()[0]) for rate in rates])
-        data = pd.DataFrame({'date': dates, 'rate': rates})
+        data = pd.DataFrame({'rate': rates}, index=[pd.to_datetime(dates)])
 
+        data = data[~data.index.duplicated()]
+        idx = pd.date_range(data.index[-1], pd.to_datetime(datetime.date.today()))
+        data = data.sort_index().reindex(idx, method='pad')[::-1]
 
-        return data
+        rateshistory = pd.DataFrame()
+        rate_name = 'CBR Refinancing Rate'
+
+        for idx in data.index:
+            rateshistory = rateshistory.append({'rates_name': rate_name, 'date': idx, 'float_value': data.get_value(idx, 'rate'), 'string_value': None, 'tag': None}, ignore_index=True)
+
+        category = pd.DataFrame([
+            {'name': 'Central Bank of Russia', 'description': 'Central Bank of Russia'},
+            {'name': 'Refinancing Rate', 'description': 'From {0} to {1}'.format(pd.to_datetime(rateshistory.date[-1:].item()), rateshistory.date[0]), 'parent_name': 'Central Bank of Russia'}
+        ])
+
+        rates = pd.DataFrame([{'name': 'CBR Refinancing Rate', 'category_name': 'Refinancing Rate', 'source': 'Finam.ru', 'tag': None}], index=[1])
+
+        self.manager.save_raw_data(category, rates, rateshistory, source='Finam.ru')
+
+    def cbr_key_rate(self):
+        url = "https://www.finam.ru/analysis/macroevent/?dind=0&dpsd=3980881&fso=date+desc&str=1&ind=1555&stdate=01.01.1991&endate=11.12.2015&sema=1&seman=5&timeStep=1"
+        r = requests.get(url)
+        tree = html.fromstring(r.text)
+        dates = np.asarray([date.text for date in tree.xpath('//td[@class="sm"]')])
+        rates = np.asarray([rate.text for rate in tree.xpath('//td[@align="right"]')])
+        rates = rates[rates != np.array(None)][::2]
+        rates = np.asarray([float(rate.split()[0]) for rate in rates])
+        data = pd.DataFrame({'rate': rates}, index=[pd.to_datetime(dates)])
+
+        data = data[~data.index.duplicated()]
+        idx = pd.date_range(data.index[-1], pd.to_datetime(datetime.date.today()))
+        data = data.sort_index().reindex(idx, method='pad')[::-1]
+
+        rateshistory = pd.DataFrame()
+        rate_name = 'CBR Key Rate'
+        for idx in data.index:
+            rateshistory = rateshistory.append({'rates_name': rate_name, 'date': idx, 'float_value': data.get_value(idx,'rate'), 'string_value': None, 'tag': None},ignore_index=True)
+
+        category = pd.DataFrame([
+            {'name': 'Central Bank of Russia', 'description': 'Central Bank of Russia'},
+            {'name': 'Key Rate', 'description': 'From {0} to {1}'.format(pd.to_datetime(rateshistory.date[-1:].item()), rateshistory.date[0]), 'parent_name': 'Central Bank of Russia'}
+            ])
+
+        rates = pd.DataFrame([{'name': 'CBR Key Rate', 'category_name': 'Key Rate', 'source': 'Finam.ru', 'tag': None}], index=[1])
+
+        self.manager.save_raw_data(category, rates, rateshistory, source='Finam.ru')
 
     def get_CBR_key_rate(self):
         client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')

@@ -62,116 +62,14 @@
       },
       "level_6": {
         "name": "MCX:SBER",
-        "description": "Public Joint-Stock Company 'Sberbank of Russia', common stock",
-        "parent_name": "MCX Equity"
-      }
-    },
-
-    "Gazprom PAO": {
-      "source": "Quandl",
-      "ticket": "GOOG/MCX_GAZP",
-      "level_1": {
-        "name": "Financial Markets",
-        "description": "Financial Markets Data Branch"
-      },
-      "level_2": {
-        "name": "Europe",
-        "description": "Europe",
-        "parent_name": "Financial Markets"
-      },
-      "level_3": {
-        "name": "Russia",
-        "description": "Russia",
-        "parent_name": "Europe"
-      },
-      "level_4": {
-        "name": "MCX",
-        "description": "Moscow Exchange",
-        "parent_name": "Russia"
-      },
-      "level_5": {
-        "name": "MCX Equity",
-        "description": "MCX Equity",
-        "parent_name": "MCX"
-      },
-      "level_6": {
-        "name": "MCX:GAZP",
-        "description": "Public Joint-Stock Company 'GAZPROM', common stock",
-        "parent_name": "MCX Equity"
-      }
-    },
-
-    "NK Lukoil": {
-      "source": "Quandl",
-      "ticket": "GOOG/MCX_LKOH",
-      "level_1": {
-        "name": "Financial Markets",
-        "description": "Financial Markets Data Branch"
-      },
-      "level_2": {
-        "name": "Europe",
-        "description": "Europe",
-        "parent_name": "Financial Markets"
-      },
-      "level_3": {
-        "name": "Russia",
-        "description": "Russia",
-        "parent_name": "Europe"
-      },
-      "level_4": {
-        "name": "MCX",
-        "description": "Moscow Exchange",
-        "parent_name": "Russia"
-      },
-      "level_5": {
-        "name": "MCX Equity",
-        "description": "MCX Equity",
-        "parent_name": "MCX"
-      },
-      "level_6": {
-        "name": "MCX:LKOH",
-        "description": "Public Joint-Stock Company 'Oil Company' LUKOIL'', common stock",
-        "parent_name": "MCX Equity"
-      }
-    },
-
-    "GMK Noril'skiy nikel' PAO": {
-      "source": "Quandl",
-      "ticket": "GOOG/MCX_GMKN",
-      "level_1": {
-        "name": "Financial Markets",
-        "description": "Financial Markets Data Branch"
-      },
-      "level_2": {
-        "name": "Europe",
-        "description": "Europe",
-        "parent_name": "Financial Markets"
-      },
-      "level_3": {
-        "name": "Russia",
-        "description": "Russia",
-        "parent_name": "Europe"
-      },
-      "level_4": {
-        "name": "MCX",
-        "description": "Moscow Exchange",
-        "parent_name": "Russia"
-      },
-      "level_5": {
-        "name": "MCX Equity",
-        "description": "MCX Equity",
-        "parent_name": "MCX"
-      },
-      "level_6": {
-        "name": "MCX:GMKN",
-        "description": "Public corporation 'Mining and Metallurgical Company' Norilsk Nickel'', common stock",
+        "description": "Public Joint-Stock Company Sberbank of Russia, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
     "Moskovskaya Birzha MMVB-RTS PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "MOEX.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_MOEX",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -198,14 +96,14 @@
       },
       "level_6": {
         "name": "MCX:MOEX",
-        "description": "Public Joint-Stock Company 'Moscow Stock Exchange MICEX-RTS', common stock",
+        "description": "Public Joint-Stock Company Moscow Stock Exchange MICEX-RTS, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
-    "NK Rosneft' PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "ROSN.ME",
+    "NK Rosneft PAO": {
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_ROSN",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -232,14 +130,14 @@
       },
       "level_6": {
         "name": "MCX:ROSN",
-        "description": "Public corporation 'Oil company' Rosneft'', common stock",
+        "description": "Public corporation Oil company Rosneft, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
     "Bank VTB PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "VTBR.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_VTBR",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -272,8 +170,8 @@
     },
 
     "AK Alrosa PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "ALRS.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_ALRS",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -300,14 +198,14 @@
       },
       "level_6": {
         "name": "MCX:ALRS",
-        "description": "Public joint-stock company 'ALROSA', common stock",
+        "description": "Public joint-stock company ALROSA, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
     "Mechel PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "MTLR.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_MTLR",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -334,14 +232,14 @@
       },
       "level_6": {
         "name": "MCX:MTLR",
-        "description": "Public Joint-Stock Company 'Mechel', common stock",
+        "description": "Public Joint-Stock Company Mechel, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
     "Surgutneftegaz OAO": {
-      "source": "Yahoo Finance",
-      "ticket": "SNGS.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_SNGS",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -368,14 +266,14 @@
       },
       "level_6": {
         "name": "MCX:SNGS",
-        "description": "Public Joint-Stock Company 'Surgutneftegaz', common stock",
+        "description": "Public Joint-Stock Company Surgutneftegaz, common stock",
         "parent_name": "MCX Equity"
       }
     },
 
     "Federal Hydro-Generating Co RusHydro PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "HYDR.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_HYDR",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -402,7 +300,7 @@
       },
       "level_6": {
         "name": "MCX:HYDR",
-        "description": "Public Joint-Stock Company 'Federal Hydro-Generating Company - RusHydro', common stock",
+        "description": "Public Joint-Stock Company Federal Hydro-Generating Company - RusHydro, common stock",
         "parent_name": "MCX Equity"
       }
     },
@@ -436,7 +334,109 @@
       },
       "level_6": {
         "name": "MCX:MGNT",
-        "description": "Public Joint-Stock Company 'Magnit', common stock",
+        "description": "Public Joint-Stock Company Magnit, common stock",
+        "parent_name": "MCX Equity"
+      }
+    },
+
+    "Gazprom PAO": {
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_GAZP",
+      "level_1": {
+        "name": "Financial Markets",
+        "description": "Financial Markets Data Branch"
+      },
+      "level_2": {
+        "name": "Europe",
+        "description": "Europe",
+        "parent_name": "Financial Markets"
+      },
+      "level_3": {
+        "name": "Russia",
+        "description": "Russia",
+        "parent_name": "Europe"
+      },
+      "level_4": {
+        "name": "MCX",
+        "description": "Moscow Exchange",
+        "parent_name": "Russia"
+      },
+      "level_5": {
+        "name": "MCX Equity",
+        "description": "MCX Equity",
+        "parent_name": "MCX"
+      },
+      "level_6": {
+        "name": "MCX:GAZP",
+        "description": "Public Joint-Stock Company GAZPROM, common stock",
+        "parent_name": "MCX Equity"
+      }
+    },
+
+    "NK Lukoil": {
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_LKOH",
+      "level_1": {
+        "name": "Financial Markets",
+        "description": "Financial Markets Data Branch"
+      },
+      "level_2": {
+        "name": "Europe",
+        "description": "Europe",
+        "parent_name": "Financial Markets"
+      },
+      "level_3": {
+        "name": "Russia",
+        "description": "Russia",
+        "parent_name": "Europe"
+      },
+      "level_4": {
+        "name": "MCX",
+        "description": "Moscow Exchange",
+        "parent_name": "Russia"
+      },
+      "level_5": {
+        "name": "MCX Equity",
+        "description": "MCX Equity",
+        "parent_name": "MCX"
+      },
+      "level_6": {
+        "name": "MCX:LKOH",
+        "description": "Public Joint-Stock Company Oil Company LUKOIL, common stock",
+        "parent_name": "MCX Equity"
+      }
+    },
+
+    "GMK Norilskiy nikel PAO": {
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_GMKN",
+      "level_1": {
+        "name": "Financial Markets",
+        "description": "Financial Markets Data Branch"
+      },
+      "level_2": {
+        "name": "Europe",
+        "description": "Europe",
+        "parent_name": "Financial Markets"
+      },
+      "level_3": {
+        "name": "Russia",
+        "description": "Russia",
+        "parent_name": "Europe"
+      },
+      "level_4": {
+        "name": "MCX",
+        "description": "Moscow Exchange",
+        "parent_name": "Russia"
+      },
+      "level_5": {
+        "name": "MCX Equity",
+        "description": "MCX Equity",
+        "parent_name": "MCX"
+      },
+      "level_6": {
+        "name": "MCX:GMKN",
+        "description": "Public corporation Mining and Metallurgical Company Norilsk Nickel, common stock",
         "parent_name": "MCX Equity"
       }
     }

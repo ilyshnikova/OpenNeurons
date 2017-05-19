@@ -59,6 +59,9 @@ class Quandl:
         else:
             raise Exception("Correct the quandl ticket")
 
+        if start < dfData.index[0]:
+            print('Date range start = {0}'.format(dfData.index[0].strftime("%Y-%m-%d")))
+
         if SaveToDB:
             self.save(dfData, category)
         else:

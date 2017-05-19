@@ -10,13 +10,13 @@ import datetime
 class YahooFinance:
     def __init__(self, period_start):
         self.start = period_start
-        self.end = datetime.date.today().strftime("%Y-%m-%d")
+        self.end = pd.to_datetime(datetime.date.today())
         self.manager = DBManager()
 
     def update(self, asset, ticket):
         category = (pd.DataFrame(asset).T).reset_index()
         category = category.iloc[:-2, 1:]
-        self.get(Category=category, ticket=ticket, start=self.start, end=self.end)
+        self.get(category=category, ticket=ticket, start=self.start, end=self.end)
 
     def save(self, Category, dfData):
         Rates = pd.DataFrame()
@@ -37,11 +37,14 @@ class YahooFinance:
 
         return [Category, Rates, RatesHistory]
 
-    def get(self, ticket, start, end, SaveToDB=False, Category=None):
+    def get(self, ticket, start, end, SaveToDB=False, category=None):
         dfData = data.DataReader(ticket, 'yahoo', start=start, end=end)
 
+        if start < dfData.index[0]:
+            print('Date range start = {0}'.format(dfData.index[0].strftime("%Y-%m-%d")))
+
         if SaveToDB:
-            self.save(Category, dfData)
+            self.save(category, dfData)
         else:
             return dfData
 
