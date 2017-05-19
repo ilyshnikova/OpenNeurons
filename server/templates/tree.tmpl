@@ -1,0 +1,41 @@
+<html>
+	<head>
+		{% include "basic-js-imports.tmpl" %}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="/files/css/tree.css">
+        <link rel="stylesheet" type="text/css" href="/files/js/tree.js">
+	</head>
+
+	<body>
+        <div class="rates-view">
+            <div class="rates-heading">
+                <div class="rates-heading-entry">Categories</div>
+                <div class="rates-heading-entry">Rates Info</div>
+            </div>
+            <div class="rates-contents">
+                <div class="rates-contents-nav tree">
+                    <ul>
+                        {%for node in nodes %}
+                            {%include "rec_tree.tmpl" %}
+                        {%endfor%}
+                    </ul>
+                </div>
+                <div class="rates-contents-main">
+                    {% include "tabs.tmpl" %}
+                </div>
+            </div>
+        </div>
+
+        <center>
+		    {% if return_url %}
+			    <button type="button" onclick="window.location = '{{return_url}}'" class="btn btn-default">Вернуться</button>
+    		{% endif %}
+        </center>
+ 	</body>
+</html>
+
+

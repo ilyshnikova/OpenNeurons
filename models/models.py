@@ -5,6 +5,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, \
 
 STRLEN = 1000
 
+
 class Base:
     @declared_attr
     def __tablename__(cls):
@@ -89,6 +90,8 @@ class DataSetComponent(Base):
     component_type = Column(String(STRLEN))
     component_index = Column(Integer)
     component_name = Column(String(STRLEN))
+    component_tag = Column(String(STRLEN))
+
     datasetvalues = relationship(
         'DataSetValues',
         backref=backref('datasetcomponent')
