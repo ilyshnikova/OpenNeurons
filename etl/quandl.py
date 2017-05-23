@@ -14,7 +14,7 @@ qu.ApiConfig.api_key = qu_api_key
 
 
 class Quandl:
-    def __init__(self, period_start):
+    def __init__(self, period_start='2000-01-01'):
         self.start = period_start
         self.end = datetime.date.today().strftime("%Y-%m-%d")
         self.manager = DBManager()
@@ -59,7 +59,7 @@ class Quandl:
         else:
             raise Exception("Correct the quandl ticket")
 
-        if start < dfData.index[0]:
+        if pd.to_datetime(start) < dfData.index[0]:
             print('Date range start = {0}'.format(dfData.index[0].strftime("%Y-%m-%d")))
 
         if SaveToDB:

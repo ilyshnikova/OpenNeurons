@@ -1,7 +1,7 @@
 {
     "MICEX_Index": {
-      "source": "Yahoo Finance",
-      "ticket": "MICEXINDEXCF.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_MICEXINDEXCF",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"
@@ -34,8 +34,8 @@
     },
 
     "Sberbank Rossii PAO": {
-      "source": "Yahoo Finance",
-      "ticket": "SBER.ME",
+      "source": "Quandl",
+      "ticket": "GOOG/MCX_SBER",
       "level_1": {
         "name": "Financial Markets",
         "description": "Financial Markets Data Branch"

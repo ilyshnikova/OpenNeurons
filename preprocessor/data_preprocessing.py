@@ -167,8 +167,7 @@ class DataPreprocessing:
 
         return data
 
-    def prct_change(self, rate_name, tag=None, shift=252, CheckData=False, SaveToDB=False):
-
+    def prct_change(self, rate_name, tag=None, shift=1, resample='D', period_start=None, period_end=None, SaveToDB=False):
         data = self.manager.get_raw_data(RateName=rate_name, Tag=tag)[2][['date', 'float_value']]
         data = data.set_index(data['date'])['float_value']
         indexx = pd.Index(pd.to_datetime(data.index))
@@ -178,47 +177,55 @@ class DataPreprocessing:
         if data.shape[1] != 1:
             raise InputError(data, 'Shape more than 1')
 
-        if CheckData:
-            dfRatesHistory = pd.DataFrame(self.manager.session.query(RatesHistory.rates_id, Rates.name.label('rates_name'),
-                                                                     RatesHistory.date, RatesHistory.float_value,
-                                                                     RatesHistory.string_value, RatesHistory.tag). \
-                                                                     join(Rates). \
-                                                                     filter(Rates.name == rate_name). \
-                                                                     filter(RatesHistory.tag == 'CH[{0}]'.format(shift)). \
-                                                                     all())
-            if dfRatesHistory.empty:
-                raise Exception('No available data with name {0}'.format(rate_name))
-            else:
-                return dfRatesHistory
+        if resample != 'D':
+            data = data.resample(resample, how=lambda x: x[-1])
+        data = data.pct_change(periods=1)
+        if resample == 'W':
+            data = data*7/365*100
+        elif resample == 'M':
+            data = data*30/365*100
+        elif resample == 'D':
+            data = data*1/365*100
+
+        if SaveToDB:
+            category = self.manager.get_raw_data(rate_name)[0][['description', 'name', 'parent_name']]
+            rates = self.manager.get_raw_data(rate_name)[1][['category_name', 'name', 'source', 'tag']]
+
+            rateshistory = pd.DataFrame()
+            rate_name = rates.name.values[0]
+            col_name = data.columns.values[0]
+            for idx in data.index:
+                rateshistory = rateshistory.append(
+                    {'rates_name': rate_name, 'date': idx, 'float_value': data.get_value(idx, col_name),
+                     'string_value': None, 'tag': 'PC[{0}]'.format(shift)}, ignore_index=True)
+
+            source = rates['source'].values[0]
+            self.manager.save_raw_data(category, rates, rateshistory, source)
+            try:
+                tag = self.manager.session.query(Rates.tag).filter(Rates.name == rate_name).one()
+                if tag[0] is None:
+                    tag_new = 'PC[{0}]'.format(shift)
+                else:
+                    tag_new = tag[0] + '|PC[{0}]'.format(shift)
+                self.manager.session.query(Rates).filter(Rates.name == rate_name).update({"tag": tag_new})
+                self.manager.session.commit()
+            except Exception as e:
+                self.session.rollback()
+                raise e
+
+            return data
         else:
-            data = data.pct_change(periods=shift)
-            data = data*shift/252*100
+            return data
 
-            if SaveToDB:
-                category = self.manager.get_raw_data(rate_name)[0][['description', 'name', 'parent_name']]
-                rates = self.manager.get_raw_data(rate_name)[1][['category_name', 'name', 'source', 'tag']]
 
-                rateshistory = pd.DataFrame()
-                rate_name = rates.name.values[0]
-                col_name = data.columns.values[0]
-                for idx in data.index:
-                    rateshistory = rateshistory.append(
-                        {'rates_name': rate_name, 'date': idx, 'float_value': data.get_value(idx, col_name), 'string_value': None, 'tag': 'PC[{0}]'.format(shift)}, ignore_index=True)
 
-                source = rates['source'].values[0]
-                self.manager.save_raw_data(category, rates, rateshistory, source)
-                try:
-                    tag = self.manager.session.query(Rates.tag).filter(Rates.name == rate_name).one()
-                    if tag[0] is None:
-                        tag_new = 'PC[{0}]'.format(shift)
-                    else:
-                        tag_new = tag[0] + '|PC[{0}]'.format(shift)
-                    self.manager.session.query(Rates).filter(Rates.name == rate_name).update({"tag": tag_new})
-                    self.manager.session.commit()
-                except Exception as e:
-                    self.session.rollback()
-                    raise e
 
-                return data
-            else:
-                return data
+# if resample != 'D':
+#     data = data.resample(resample, how=lambda x: x[-1])
+# data = data.pct_change(periods=1)
+# if resample == 'W':
+#     data = data*7/365*100
+# elif resample == 'M':
+#     data = data*30/365*100
+# elif resample == 'D':
+#     data = data*1/365*100

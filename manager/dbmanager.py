@@ -166,16 +166,16 @@ class DBManager:
             self.session.rollback()
             raise e
 
-    def save_dataset(self, model, dataset_name, X, y):
+    def save_dataset(self, model, dataset, X, y):
         ModelData = []
         for comp_name in X:
             vec_id = 0
             for comp_val in X[comp_name]:
                 modelr = self.__get_or_create(Model,
-                                          model_name=model['model_name'],
-                                          description=model['description'],
-                                          model_type=model['type'])
-                datasetr = self.__get_or_create(DataSet, name=dataset_name)
+                                          model_name=model['model_name'][0],
+                                          description=model['description'][0],
+                                          model_type=model['model_type'][0])
+                datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
                 model2dataset = self.__get_or_create(Model2Dataset,
                                                  model_id=modelr.id,
                                                  dataset_id=datasetr.id)
@@ -197,10 +197,10 @@ class DBManager:
                 vec_id = 0
                 for comp_val in y[comp_name]:
                     modelr = self.__get_or_create(Model,
-                                                  model_name=model['model_name'],
-                                                  description=model['description'],
-                                                  model_type=model['type'])
-                    datasetr = self.__get_or_create(DataSet, name=dataset_name)
+                                                  model_name=model['model_name'][0],
+                                                  description=model['description'][0],
+                                                  model_type=model['model_type'][0])
+                    datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
                     model2dataset = self.__get_or_create(Model2Dataset,
                                                          model_id=modelr.id,
                                                          dataset_id=datasetr.id)
@@ -225,15 +225,15 @@ class DBManager:
             self.session.rollback()
             raise e
 
-    def save_model_prediction(self, model, dataset_name, prediction):
+    def save_model_prediction(self, model, dataset, prediction):
         ModelData = []
         vec_id = 0
         for comp_val in prediction[prediction.columns.values[0]]:
             modelr = self.__get_or_create(Model,
-                                      model_name=model['model_name'],
-                                      description=model['description'],
-                                      model_type=model['type'])
-            datasetr = self.__get_or_create(DataSet, name=dataset_name)
+                                      model_name=model['model_name'][0],
+                                      description=model['description'][0],
+                                      model_type=model['model_type'][0])
+            datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
             model2dataset = self.__get_or_create(Model2Dataset,
                                              model_id=modelr.id,
                                              dataset_id=datasetr.id)
@@ -317,7 +317,6 @@ class DBManager:
             self.session.rollback()
             raise e
 
-
     def get_model_prediction(self, dataset_name):
         try:
             prd_id = self.session.query(DataSetComponent.id).join(DataSet). \
@@ -342,7 +341,6 @@ class DBManager:
         all_tables = list(reversed(metadata.sorted_tables))
         for table in all_tables:
             self.engine.execute(table.delete())
-
 
     def load_tables_from_json(self, file_path):
         clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
