@@ -1,46 +1,35 @@
 # -*- coding: utf8 -*-
+import json
 
 from flask import Flask, send_from_directory, render_template, request
-import json
-import os
-from helpers import *
 
-from sqlalchemy import *
-
-import sys
-
-from manager.reader import *
+from manager.dbmanager import DBManager
+from .helpers import add_datasets_to_model, \
+    get_all_dataset_for_model, get_dataset, get_model_info, \
+    get_models_pretty_list, get_rates
 
 app = Flask(__name__)
 
-def add_default_values(elements, request):
+
+def add_default_values(elements, req):
     for element in elements:
-        value = request.args.get(element['id'])
+        value = req.args.get(element['id'])
         if value:
             element['default'] = value
 
     return elements
 
+
 with open('config.json') as data_file:
-        config = json.load(data_file)
+    config = json.load(data_file)
 
-base = DBManager(
-    db_name=config['database']['db_name'],
-    user=config['database']['user'],
-    host=config['database']['host'],
-)
-
-
-models_table = Table('model', metadata, autoload=True)
-models_2_data_table = Table('model_2_data_set', metadata, autoload=True)
-dataset_table = Table('data_set', metadata, autoload=True)
-dataset_comp_table = Table('data_set_component', metadata, autoload=True)
-dataset_values_table = Table('data_set_values', metadata, autoload=True)
+base = DBManager()
 
 
 @app.route('/files/<path:path>')
 def send_file(path):
     return send_from_directory('files', path)
+
 
 @app.route('/')
 def ok():
@@ -48,22 +37,16 @@ def ok():
         'menu.html',
         elements=[
             {
-                'title' : 'Просмотр моделей',
-                'href' : '/models',
+                'title': 'Просмотр моделей',
+                'href': '/models',
             },
             {
                 'title': 'Модель -> выборка',
                 'href': '/chose_dataset'
             },
             {
-                'title' : 'Просмотр лингвистических переменных',
-                'href' : '/ling-vars',
-                'disabled' : True,
-            },
-            {
-                'title' : 'Просмотр правил базы знаний нечетких высказываний',
-                'href' : '/rules',
-                'disabled' : True,
+                'title': 'Rates',
+                'href': '/rates',
             },
         ],
     )
@@ -71,23 +54,22 @@ def ok():
 
 @app.route('/models')
 def show_models():
-
-    options = get_models_pretty_list(base, models_table)
+    options = get_models_pretty_list(base)
     print(options)
 
     elements = [
         {
             'title': 'Модели',
             'id': 'models',
-            'type' : 'choice',
-            'options' : options,
+            'type': 'choice',
+            'options': options,
             'default': options[0]['id'],
         },
     ]
-    return_url="/"
+    return_url = "/"
 
     if request.args.get('result'):
-        (model_info, datasets) = get_model_info(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+        model_info, datasets = get_model_info(base, request.args.get('models'))
 
         return render_template(
             "models.html",
@@ -103,12 +85,12 @@ def show_models():
             return_url=return_url,
         )
 
+
 @app.route('/dataset')
 def show_dataset():
+    return_url = "/models?models=%s&result=1" % request.args.get('models')
 
-    return_url="/models?models=%s&result=1" % request.args.get('models')
-
-    (head, dataset) = get_dataset(base, request.args.get('id'), dataset_comp_table, dataset_values_table)
+    head, dataset = get_dataset(base, request.args.get('id'))
 
     return render_template(
         "dataset.html",
@@ -121,22 +103,23 @@ def show_dataset():
 
 @app.route('/chose_dataset')
 def show_chose_dataset():
-    return_url="/"
+    return_url = "/"
 
-    options = get_models_pretty_list(base, models_table)
+    options = get_models_pretty_list(base)
 
     elements = [
         {
             'title': 'Модели',
             'id': 'models',
-            'type' : 'choice',
-            'options' : options,
+            'type': 'choice',
+            'options': options,
             'default': options[0]['id'],
         },
     ]
 
     if request.args.get('result') == '1':
-        (datasets, checked_datasets) = get_all_dataset_for_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table)
+        model_id = request.args.get('models')
+        datasets, checked_datasets = get_all_dataset_for_model(base, model_id)
 
         return render_template(
             "checkbox_list.html",
@@ -147,13 +130,15 @@ def show_chose_dataset():
             result=2,
         )
     elif request.args.get('result') == '2':
-        (datasets, checked_datasets) = get_all_dataset_for_model(
+        model_id = request.args.get('models')
+        datasets_ids = request.args.get('datasets_ids').split(',')
+        add_datasets_to_model(base, model_id, datasets_ids)
+
+        datasets, checked_datasets = get_all_dataset_for_model(
             base,
             request.args.get('models'),
-            models_table, models_2_data_table, dataset_table,
-            request.args.get('datasets_ids').split(','))
+        )
 
-        add_datasets_to_model(base, request.args.get('models'), models_table, models_2_data_table, dataset_table, request.args.get('datasets_ids').split(','))
         return render_template(
             "checkbox_list.html",
             return_url=return_url,
@@ -172,10 +157,35 @@ def show_chose_dataset():
         )
 
 
+@app.route('/rates')
+def rates():
+    return_url = "/"
+    category_id = request.args.get('node')
+    rate_id = request.args.get('rate')
+    cats, rate, tabs = get_rates(base, category_id, rate_id)
 
-if __name__ == "__main__":
-#    os.chdir("/root/open_trm/")
-    app.jinja_env.tests['equalto'] = lambda value, other : value == other
+    if 'node' in request.args:
+        return render_template(
+            "tree.tmpl",
+            tabs=tabs,
+            cur_tab=rate,
+            nodes=cats,
+            category=category_id,
+            cur_rate=rate_id,
+            return_url=return_url,
+        )
+    else:
+        return render_template(
+            "tree.tmpl",
+            tabs=tabs,
+            cur_tab=rate,
+            nodes=cats,
+            return_url=return_url,
+        )
+
+
+def server_main():
+    app.jinja_env.tests['equalto'] = lambda value, other: value == other
     app.run(
         host=config['server']['host'],
         port=int(config['server']['port']),
@@ -183,3 +193,8 @@ if __name__ == "__main__":
         debug=True,
         threaded=False,
     )
+
+
+if __name__ == "__main__":
+    server_main()
+

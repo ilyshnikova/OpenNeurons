@@ -1,8 +1,31 @@
 # OpenNeurons
 
-debuild -d && sudo dpkg -i ../open-trm_99999.9_amd64.deb
+## Prerequirements
+```
+# Check for prerequirements installed
+# (not implemented yet)
+python3 ./manage_server.py checkdeps
 
+```
 
-sudo -u postgres psql   -tc  "SELECT 1 FROM pg_database WHERE datname = 'trmdb'" | grep -q 1 || sudo -u postgres psql -tc "CREATE DATABASE trmdb"
+## Database Initialization
+```
+# Create an empty database
+psql -U postgres -tc  "SELECT 1 FROM pg_database WHERE datname = 'trmdb'" | grep -q 1 || psql -U postgres -tc "CREATE DATABASE trmdb"
 
-sudo -u postgres psql trmdb < fish
+# Create empty database schema
+python3 ./manage_server.py initdb
+
+# Fill database with provided Iris Fisher data
+psql -U postgres -d trmdb < fisher.sql
+
+```
+
+## Web server usage:
+```
+# Start a web server
+python3 ./manage_server.py runserver
+
+# Then open http://localhost:50001/ in your browser
+```
+

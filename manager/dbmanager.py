@@ -106,7 +106,7 @@ class DBManager:
        return [Category, Rates, RatesHistory]
 
     def get_raw_data(self, RateName, CategoryName = None, Tag = None):
-        # seems not to be working with parent depth more than 1 
+        # seems not to be working with parent depth more than 1
         # Category name?? Tag ??
         ParentCategory = aliased(Category)
 
@@ -335,7 +335,8 @@ class DBManager:
         except Exception as e:
             self.session.rollback()
             raise e
-
+            
+            
     def drop_all_tables(self):
         metadata = Base.metadata
         all_tables = list(reversed(metadata.sorted_tables))
@@ -357,5 +358,5 @@ class DBManager:
 
             ins = insert(table_object).values(vals_to_insert)
             self.engine.connect().execute(ins)
-
         self.session.commit()
+
