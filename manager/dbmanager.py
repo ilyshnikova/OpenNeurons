@@ -80,8 +80,7 @@ class DBManager:
             OutCategory = self.__get_or_create(Category, name = rc[0], description = rc[1], parent = self.__set_parent_category(dfCategory, rc[2], nested_level+1))
         return OutCategory
 
-# Example get_raw_data with static data
-
+    # Example get_raw_data with static data
     def get_iris_sample_raw_data(self, RateName = None):
        Category = None
        Rates = None
@@ -133,7 +132,8 @@ class DBManager:
 
         dfRatesHistory = pd.DataFrame(self.session.query(RatesHistory.rates_id, Rates.name.label('rates_name'), RatesHistory.date, RatesHistory.float_value, RatesHistory.string_value, RatesHistory.tag).\
                                       join(Rates).\
-                                      filter(Rates.name == RateName).\
+                                      filter(Rates.name == RateName). \
+                                      filter(RatesHistory.tag == Tag).\
                                       all())
 
         return [dfCategory, dfRates, dfRatesHistory]
@@ -143,7 +143,7 @@ class DBManager:
 
         for rrh in rateshistory[['rates_name', 'date', 'float_value', 'string_value', 'tag']].values:
             rowc = self.__set_parent_category(dfCategory = category,
-                                       category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
+                                              category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
             rows = self.__get_or_create(Source,
                                        name = source)
             rowr = self.__get_or_create(Rates,
@@ -166,73 +166,92 @@ class DBManager:
             self.session.rollback()
             raise e
 
-    def save_dataset(self, ft_data, trg_data, model_name, dataset_name):
+    def save_dataset(self, model, dataset, X, y):
+        ModelData = []
+        for comp_name in X:
+            vec_id = 0
+            for comp_val in X[comp_name]:
+                modelr = self.__get_or_create(Model,
+                                          model_name=model['model_name'][0],
+                                          description=model['description'][0],
+                                          model_type=model['model_type'][0])
+                datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
+                model2dataset = self.__get_or_create(Model2Dataset,
+                                                 model_id=modelr.id,
+                                                 dataset_id=datasetr.id)
+                dscomponent = self.__get_or_create(DataSetComponent,
+                                               dataset_id=datasetr.id,
+                                               component_type='I',
+                                               component_index=str(comp_name)[-1],
+                                               component_name=str(comp_name))
+                dsvalue = self.__get_or_create(DataSetValues,
+                                           component_id=dscomponent.id,
+                                           dataset_id=datasetr.id,
+                                           vector_id = vec_id,
+                                           value=comp_val.astype(float))
+                ModelData.append(dsvalue)
+                vec_id = vec_id + 1
+
+        if y is not None:
+            for comp_name in y:
+                vec_id = 0
+                for comp_val in y[comp_name]:
+                    modelr = self.__get_or_create(Model,
+                                                  model_name=model['model_name'][0],
+                                                  description=model['description'][0],
+                                                  model_type=model['model_type'][0])
+                    datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
+                    model2dataset = self.__get_or_create(Model2Dataset,
+                                                         model_id=modelr.id,
+                                                         dataset_id=datasetr.id)
+                    dscomponent = self.__get_or_create(DataSetComponent,
+                                                       dataset_id=datasetr.id,
+                                                       component_type='O',
+                                                       component_index=str(comp_name)[-1],
+                                                       component_name=str(comp_name))
+                    dsvalue = self.__get_or_create(DataSetValues,
+                                                   component_id=dscomponent.id,
+                                                   dataset_id=datasetr.id,
+                                                   vector_id=vec_id,
+                                                   value=comp_val.astype(float))
+                    ModelData.append(dsvalue)
+                    vec_id = vec_id + 1
+
         try:
-            model = self.__get_or_create(
-                Model,
-                model_name=model_name,
-                description='test',
-                model_type='K'
-            )
+            self.session.add_all(ModelData)
+            self.session.commit()
 
-            dataset = self.__get_or_create(
-                DataSet,
-                name=dataset_name
-            )
+        except Exception as e:
+            self.session.rollback()
+            raise e
 
-            model2dataset = self.__get_or_create(
-                Model2Dataset,
-                model_id=model.id,
-                dataset_id=dataset.id
-            )
+    def save_model_prediction(self, model, dataset, prediction):
+        ModelData = []
+        vec_id = 0
+        for comp_val in prediction[prediction.columns.values[0]]:
+            modelr = self.__get_or_create(Model,
+                                      model_name=model['model_name'][0],
+                                      description=model['description'][0],
+                                      model_type=model['model_type'][0])
+            datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
+            model2dataset = self.__get_or_create(Model2Dataset,
+                                             model_id=modelr.id,
+                                             dataset_id=datasetr.id)
+            dscomponent = self.__get_or_create(DataSetComponent,
+                                           dataset_id=datasetr.id,
+                                           component_type='P',
+                                           component_index=1,
+                                           component_name='P')
+            dsvalue = self.__get_or_create(DataSetValues,
+                                       component_id=dscomponent.id,
+                                       dataset_id=datasetr.id,
+                                       vector_id = vec_id,
+                                       value=comp_val.astype(float))
+            ModelData.append(dsvalue)
+            vec_id = vec_id + 1
 
-            max_id = self.session.query(func.max(DataSetValues.vector_id)).\
-                    join(DataSetComponent). \
-                    join(DataSet) .\
-                    filter(DataSet.name==dataset_name). \
-                    scalar()
-
-            if max_id == None:
-                max_id = 0
-            if max_id is not None:
-                max_id = max_id + 1
-
-            datasetvalues = []
-            for i in range(ft_data.shape[1]):
-                component = self.__get_or_create(
-                    DataSetComponent,
-                    dataset_id=dataset.id,
-                    component_type='I',
-                    component_index=i + 1,
-                    component_name=str('X'+str(i+1))
-                )
-                for idx in range(ft_data.shape[0]):
-                    data_val = DataSetValues(
-                        component_id=component.id,
-                        dataset_id=dataset.id,
-                        vector_id=max_id + idx,
-                        value=ft_data.iloc[idx, i]
-                    )
-                    datasetvalues.append(data_val)
-
-            for i in range(trg_data.shape[1]):
-                component = self.__get_or_create(
-                    DataSetComponent,
-                    dataset_id=dataset.id,
-                    component_type='O',
-                    component_index=i + 1,
-                    component_name=str('O' + str(i + 1))
-                )
-                for idx in range(trg_data.shape[0]):
-                    data_val = DataSetValues(
-                        component_id=component.id,
-                        dataset_id=dataset.id,
-                        vector_id=max_id + idx,
-                        value=trg_data.iloc[idx, i]
-                    )
-                    datasetvalues.append(data_val)
-
-            self.session.add_all(datasetvalues)
+        try:
+            self.session.add_all(ModelData)
             self.session.commit()
 
         except Exception as e:
@@ -258,14 +277,19 @@ class DBManager:
                                           'val': val},
                                          ignore_index=True)
 
+            comp_I_names = list(self.session.query(DataSetComponent.component_name).join(DataSet). \
+                              filter(DataSet.name == dataset_name, DataSetComponent.component_type == 'I').all())
+            comp_I_names = [name[0] for name in comp_I_names]
+
             dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
             X = pd.DataFrame.from_dict(dic).T
+            X.columns = comp_I_names
 
             # Get all "component_id" output values
             out_id = [id[0] for id in
                       self.session.query(DataSetComponent.id). \
                           join(DataSet). \
-                          filter(DataSet.name == 'Iris data'). \
+                          filter(DataSet.name == dataset_name). \
                           filter(DataSetComponent.component_type == 'O').all()]
 
             # Get output data
@@ -279,8 +303,13 @@ class DBManager:
                                           'val': val},
                                          ignore_index=True)
 
+            comp_O_names = list(self.session.query(DataSetComponent.component_name).join(DataSet). \
+                                filter(DataSet.name == dataset_name, DataSetComponent.component_type == 'O').all())
+            comp_O_names = [name[0] for name in comp_O_names]
+
             dic = {k: g["val"].tolist() for k, g in ft_data.groupby("vec_id")}
             y = pd.DataFrame.from_dict(dic).T
+            y.columns = comp_O_names
 
             return [X, y]
 
@@ -288,12 +317,31 @@ class DBManager:
             self.session.rollback()
             raise e
 
+    def get_model_prediction(self, dataset_name):
+        try:
+            prd_id = self.session.query(DataSetComponent.id).join(DataSet). \
+                                        filter(DataSet.name == dataset_name,
+                                               DataSetComponent.component_type == 'P').one()[0]
+
+            pred_data = pd.DataFrame()
+            for vec_id, val in \
+                    self.session.query(DataSetValues.vector_id, DataSetValues.value). \
+                            filter(DataSetValues.component_id == prd_id). \
+                            order_by(DataSetValues.vector_id):
+                pred_data = pred_data.append({'P': val}, ignore_index=True)
+
+            return pred_data
+
+        except Exception as e:
+            self.session.rollback()
+            raise e
+            
+            
     def drop_all_tables(self):
         metadata = Base.metadata
         all_tables = list(reversed(metadata.sorted_tables))
         for table in all_tables:
             self.engine.execute(table.delete())
-
 
     def load_tables_from_json(self, file_path):
         clsmembers = dict(inspect.getmembers(sys.modules['models.models'], inspect.isclass))
@@ -310,5 +358,5 @@ class DBManager:
 
             ins = insert(table_object).values(vals_to_insert)
             self.engine.connect().execute(ins)
-
         self.session.commit()
+
