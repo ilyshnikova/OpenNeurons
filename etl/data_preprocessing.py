@@ -138,33 +138,6 @@ class DataPreprocessing:
         else:
             return data
 
-        # if save_to_db:
-        #     category = self.manager.get_raw_data(rate_name)[0][['description', 'name', 'parent_name']]
-        #     rates = self.manager.get_raw_data(rate_name)[1][['category_name', 'name', 'source', 'tag']]
-        #
-        #     rateshistory = pd.DataFrame()
-        #     rate_name = rates.name.values[0]
-        #     col_name = data.columns.values[0]
-        #     for idx in data.index:
-        #         rateshistory = rateshistory.append(
-        #             {'rates_name': rate_name, 'date': idx, 'float_value': data.get_value(idx, col_name), 'string_value': None, 'tag': 'CG'}, ignore_index=True)
-        #
-        #     source = rates['source'].values[0]
-        #     self.manager.save_raw_data(category, rates, rateshistory, source)
-        #     try:
-        #         tag = self.manager.session.query(Rates.tag).filter(Rates.name == rate_name).one()
-        #         if tag[0] is None:
-        #             tag_new = 'CG'
-        #         else:
-        #             tag_new = tag[0] + '|CG'
-        #         self.manager.session.query(Rates).filter(Rates.name == rate_name).update({"tag": tag_new})
-        #         self.manager.session.commit()
-        #     except Exception as e:
-        #         self.session.rollback()
-        #         raise e
-        #
-        # return data
-
     def prct_change(self, rate_name, tag=None, shift=1, resample='D', period_start=None, period_end=None, SaveToDB=False):
         data = self.manager.get_raw_data(RateName=rate_name, Tag=tag)[2][['date', 'float_value']]
         data = data.set_index(data['date'])['float_value']
@@ -214,16 +187,3 @@ class DataPreprocessing:
             return data
         else:
             return data
-
-
-
-
-# if resample != 'D':
-#     data = data.resample(resample, how=lambda x: x[-1])
-# data = data.pct_change(periods=1)
-# if resample == 'W':
-#     data = data*7/365*100
-# elif resample == 'M':
-#     data = data*30/365*100
-# elif resample == 'D':
-#     data = data*1/365*100
