@@ -1,0 +1,69 @@
+{
+  "MICEX_Index": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_MICEXINDEXCF"
+  },
+
+  "Sberbank Rossii PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_SBER"
+  },
+
+  "Moskovskaya Birzha MMVB-RTS PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_MOEX"
+  },
+
+  "NK Rosneft PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_ROSN"
+  },
+
+  "Bank VTB PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_VTBR"
+  },
+
+  "AK Alrosa PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_ALRS"
+  },
+
+  "Mechel PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_MTLR"
+  },
+
+  "Surgutneftegaz OAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_SNGS"
+  },
+
+  "Federal Hydro-Generating Co RusHydro PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_HYDR"
+  },
+
+  "Magnit PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_MGNT"
+  },
+
+  "Gazprom PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_GAZP"
+  },
+
+  "NK Lukoil": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_LKOH"
+  },
+
+  "GMK Norilskiy nikel PAO": {
+    "source": "Quandl",
+    "ticket": "GOOG/MCX_GMKN"
+  }
+}
+
+
+

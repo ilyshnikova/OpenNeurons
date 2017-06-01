@@ -1,6 +1,5 @@
-﻿from sqlalchemy import text, func
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, aliased, joinedload
+﻿from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, aliased
 
 import json
 import sys, inspect
@@ -9,7 +8,6 @@ from sqlalchemy import insert
 from models.models import *
 
 import pandas as pd
-import numpy as np
 import json
 
 
@@ -106,6 +104,17 @@ class DBManager:
        return [Category, Rates, RatesHistory]
 
     def get_raw_data(self, RateName, CategoryName = None, Tag = None):
+        """
+        Parameters
+        ----------
+        RateName: string
+        CategoryName: string
+        Tag: string
+
+        Returns
+        -------
+        list(DataFrame, DataFrame, DataFrame)
+        """
         # seems not to be working with parent depth more than 1
         # Category name?? Tag ??
         ParentCategory = aliased(Category)
@@ -138,25 +147,54 @@ class DBManager:
 
         return [dfCategory, dfRates, dfRatesHistory]
 
+    def get_timeseries(self, rate_name, tag=None):
+        """
+        Parameters
+        ----------
+        rate_name: string
+        tag: string
+
+        Returns
+        -------
+        Series
+        """
+
+        data = pd.DataFrame(self.session.query(RatesHistory.date, RatesHistory.float_value). \
+                            join(Rates). \
+                            filter(Rates.name == rate_name). \
+                            filter(RatesHistory.tag == tag). \
+                            all())
+
+        data = data.set_index(pd.DatetimeIndex(data['date']))['float_value']
+        return data
+
     def save_raw_data(self, category, rates, rateshistory, source):
+        """
+        Parameters
+        ----------
+        category: DataFrame
+        rates: DataFrame
+        rateshistory: DataFrame
+        source: string
+        """
         NewRawData = []
 
         for rrh in rateshistory[['rates_name', 'date', 'float_value', 'string_value', 'tag']].values:
-            rowc = self.__set_parent_category(dfCategory = category,
-                                              category_name = rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
+            rowc = self.__set_parent_category(dfCategory=category,
+                                              category_name=rates[(rates['name'] == rrh[0])][['category_name']].values[0][0])
             rows = self.__get_or_create(Source,
-                                       name = source)
+                                        name=source)
             rowr = self.__get_or_create(Rates,
-                                       name = rrh[0],
-                                       source = rows,
-                                       tag = rates[(rates['name'] == rrh[0])][['tag']].values[0][0],
-                                       category = rowc)
+                                        name=rrh[0],
+                                        source=rows,
+                                        tag=rates[(rates['name'] == rrh[0])][['tag']].values[0][0],
+                                        category=rowc)
             rowrh = self.__get_or_create(RatesHistory,
-                                        date = rrh[1],
-                                        float_value = rrh[2],
-                                        string_value = rrh[3],
-                                        tag = rrh[4],
-                                        rates = rowr)
+                                         date=rrh[1],
+                                         float_value=rrh[2],
+                                         string_value=rrh[3],
+                                         tag=rrh[4],
+                                         rates=rowr)
             NewRawData.append(rowrh)
 
         try:
@@ -166,47 +204,60 @@ class DBManager:
             self.session.rollback()
             raise e
 
-    def save_dataset(self, model, dataset, X, y):
+    def save_dataset(self, model_inform, dataset_inform, dataset, target):
+        """
+        Parameters
+        ----------
+        model_inform: DataFrame
+        dataset_inform: DataFrame
+        dataset: DataFrame
+        target: DataFrame
+        """
         ModelData = []
-        for comp_name in X:
+        for comp_name in dataset:
             vec_id = 0
-            for comp_val in X[comp_name]:
-                modelr = self.__get_or_create(Model,
-                                          model_name=model['model_name'][0],
-                                          description=model['description'][0],
-                                          model_type=model['model_type'][0])
-                datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
-                model2dataset = self.__get_or_create(Model2Dataset,
-                                                 model_id=modelr.id,
-                                                 dataset_id=datasetr.id)
-                dscomponent = self.__get_or_create(DataSetComponent,
-                                               dataset_id=datasetr.id,
-                                               component_type='I',
-                                               component_index=str(comp_name)[-1],
-                                               component_name=str(comp_name))
-                dsvalue = self.__get_or_create(DataSetValues,
-                                           component_id=dscomponent.id,
-                                           dataset_id=datasetr.id,
-                                           vector_id = vec_id,
-                                           value=comp_val.astype(float))
-                ModelData.append(dsvalue)
+            for comp_val in dataset[comp_name]:
+                _model = self.__get_or_create(Model,
+                                              model_name=model_inform['model_name'].values[0],
+                                              description=model_inform['description'].values[0],
+                                              model_type=model_inform['model_type'].values[0])
+
+                _dataset = self.__get_or_create(DataSet, name=dataset_inform['name'].values[0])
+
+                _model2dataset = self.__get_or_create(Model2Dataset,
+                                                      model_id=_model.id,
+                                                      dataset_id=_dataset.id)
+
+                _datasetcomponent = self.__get_or_create(DataSetComponent,
+                                                   dataset_id=_dataset.id,
+                                                   component_type='Input',
+                                                   component_index=str(comp_name)[-1],
+                                                   component_name=str(comp_name))
+
+                _datasetvalue = self.__get_or_create(DataSetValues,
+                                               component_id=_datasetcomponent.id,
+                                               dataset_id=_dataset.id,
+                                               vector_id=vec_id,
+                                               value=comp_val.astype(float))
+
+                ModelData.append(_datasetvalue)
                 vec_id = vec_id + 1
 
-        if y is not None:
-            for comp_name in y:
+        if target is not None:
+            for comp_name in target:
                 vec_id = 0
-                for comp_val in y[comp_name]:
+                for comp_val in target[comp_name]:
                     modelr = self.__get_or_create(Model,
-                                                  model_name=model['model_name'][0],
-                                                  description=model['description'][0],
-                                                  model_type=model['model_type'][0])
-                    datasetr = self.__get_or_create(DataSet, name=dataset['name'][0])
+                                                  model_name=model_inform['model_name'][0],
+                                                  description=model_inform['description'][0],
+                                                  model_type=model_inform['model_type'][0])
+                    datasetr = self.__get_or_create(DataSet, name=dataset_inform['name'][0])
                     model2dataset = self.__get_or_create(Model2Dataset,
                                                          model_id=modelr.id,
                                                          dataset_id=datasetr.id)
                     dscomponent = self.__get_or_create(DataSetComponent,
                                                        dataset_id=datasetr.id,
-                                                       component_type='O',
+                                                       component_type='Output',
                                                        component_index=str(comp_name)[-1],
                                                        component_name=str(comp_name))
                     dsvalue = self.__get_or_create(DataSetValues,
@@ -239,7 +290,7 @@ class DBManager:
                                              dataset_id=datasetr.id)
             dscomponent = self.__get_or_create(DataSetComponent,
                                            dataset_id=datasetr.id,
-                                           component_type='P',
+                                           component_type='Prediction',
                                            component_index=1,
                                            component_name='P')
             dsvalue = self.__get_or_create(DataSetValues,
@@ -264,7 +315,7 @@ class DBManager:
             out_id = [id[0] for id in self.session.query(DataSetComponent.id).\
                         join(DataSet).\
                         filter(DataSet.name == dataset_name).\
-                        filter(DataSetComponent.component_type == 'I').all()]
+                        filter(DataSetComponent.component_type == 'Input').all()]
 
             # Get input data
             # : DataFrame
@@ -290,7 +341,7 @@ class DBManager:
                       self.session.query(DataSetComponent.id). \
                           join(DataSet). \
                           filter(DataSet.name == dataset_name). \
-                          filter(DataSetComponent.component_type == 'O').all()]
+                          filter(DataSetComponent.component_type == 'Output').all()]
 
             # Get output data
             # : DataFrame
@@ -328,15 +379,14 @@ class DBManager:
                     self.session.query(DataSetValues.vector_id, DataSetValues.value). \
                             filter(DataSetValues.component_id == prd_id). \
                             order_by(DataSetValues.vector_id):
-                pred_data = pred_data.append({'P': val}, ignore_index=True)
+                pred_data = pred_data.append({'Prediction': val}, ignore_index=True)
 
             return pred_data
 
         except Exception as e:
             self.session.rollback()
             raise e
-            
-            
+
     def drop_all_tables(self):
         metadata = Base.metadata
         all_tables = list(reversed(metadata.sorted_tables))
