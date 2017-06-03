@@ -9,11 +9,6 @@
     "ticket": "GOOG/MCX_SBER"
   },
 
-  "Moskovskaya Birzha MMVB-RTS PAO": {
-    "source": "Quandl",
-    "ticket": "GOOG/MCX_MOEX"
-  },
-
   "NK Rosneft PAO": {
     "source": "Quandl",
     "ticket": "GOOG/MCX_ROSN"
@@ -22,11 +17,6 @@
   "Bank VTB PAO": {
     "source": "Quandl",
     "ticket": "GOOG/MCX_VTBR"
-  },
-
-  "AK Alrosa PAO": {
-    "source": "Quandl",
-    "ticket": "GOOG/MCX_ALRS"
   },
 
   "Mechel PAO": {

@@ -147,12 +147,14 @@ class DBManager:
 
         return [dfCategory, dfRates, dfRatesHistory]
 
-    def get_timeseries(self, rate_name, tag=None):
+    def get_timeseries(self, rate_name, tag=None, start=None, end=None):
         """
         Parameters
         ----------
         rate_name: string
         tag: string
+        start: datetime
+        end: datetime
 
         Returns
         -------
@@ -166,7 +168,7 @@ class DBManager:
                             all())
 
         data = data.set_index(pd.DatetimeIndex(data['date']))['float_value']
-        return data
+        return data[start:end]
 
     def save_raw_data(self, category, rates, rateshistory, source):
         """

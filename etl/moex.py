@@ -92,16 +92,17 @@ class MOEX:
                 self.save(category=bd_category, rates=bd_rates, rateshistory=bd_rateshistory, source='MOEX.COM')
                 wd_category, wd_rates, wd_rateshistory = self.prepare_to_save_trading_calendar('Weekend Days', year, weekend_days)
                 self.save(category=wd_category, rates=wd_rates, rateshistory=wd_rateshistory, source='MOEX.COM')
-                return None
             else:
                 frames.append(business_days)
                 frames.append(weekend_days)
                 names.append('business_days_{0}'.format(year))
                 names.append('weekend_days_{0}'.format(year))
 
-        agregate_data = pd.concat(frames, axis=1)
-        agregate_data.columns = names
-        return agregate_data
+        if save_to_db is False:
+            agregate_data = pd.concat(frames, axis=1)
+            agregate_data.columns = names
+            return agregate_data
+
 
 
         # if save_to_db:

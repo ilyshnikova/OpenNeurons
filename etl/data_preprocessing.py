@@ -54,25 +54,29 @@ class DataPreprocessing:
             self.session.rollback()
             raise e
 
-    def check_anomalies(self, rate_name, tag=None, save_to_db=False):
+    def check_anomalies(self, rate_name, data=None, tag=None, start=None, end=None, save_to_db=False):
         """
         Parameters
         ----------
         rate_name: string
+        data: Series
         tag: string
+        start: datetime
+        end: datetime
         save_to_db: bool
 
         Returns
         -------
         If save_to_db is False, function will return Series of clean data from anomalies
         """
-        data = self.manager.get_timeseries(rate_name=rate_name, tag=tag)
+        if data is None:
+            data = self.manager.get_timeseries(rate_name=rate_name, tag=tag, start=start, end=end)
 
         abs_daily_return = abs(data.diff(periods=1)).dropna()
         bound = abs_daily_return.mean() + 3 * abs_daily_return.std()
         anomaly_idx = list(abs_daily_return[abs_daily_return > bound].index)[::2]
 
-        if len(anomaly_idx) > 0:
+        if len(anomaly_idx) == 0:
             print('No anomalies were found by the method of three sigma')
             print('Data will not be saved or returd')
         else:
@@ -83,7 +87,7 @@ class DataPreprocessing:
             else:
                 return data
 
-    def check_moex_gaps(self, rate_name, tag=None, save_to_db=False):
+    def check_moex_gaps(self, rate_name, tag=None, start=None, end=None, save_to_db=False):
         """
         Parameters
         ----------
@@ -96,6 +100,7 @@ class DataPreprocessing:
         If save_to_db is False, function will return Series of clean data from time gaps
         """
         data = self.manager.get_timeseries(rate_name=rate_name, tag=tag)
+        data = data[start:end]
 
         bdays = pd.read_sql(self.manager.session.query(RatesHistory.date). \
                          join(Rates). \
