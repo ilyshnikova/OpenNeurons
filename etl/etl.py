@@ -3,29 +3,34 @@ import pandas as pd
 import lxml
 import numpy as np
 
-from zeep import Client
-from models.models import *
 from manager.dbmanager import DBManager
-from etl.quandl import Quandl
+from etl.quandl        import Quandl
+from models.models     import *
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
+from pdfminer.pdfpage   import PDFPage
+from pdfminer.layout    import LAParams
 
-from io import StringIO
+from io   import StringIO
+from zeep import Client
+
+import json
 import os
 
 
 class ETL:
     def __init__(self, manager: DBManager):
         self.manager = manager
-        # Up-to-date data from external resources
-        self._update_external_data()
 
-    def _update_external_data(self):
-        qu = Quandl(period_start='2000-01-01')
-        qu.update()
+    def update_external_data(self):
+        with open('local_files/portfolio.json') as data_file:
+            portfolio = json.load(data_file)
+
+        for asset_name in list(portfolio.keys()):
+            if portfolio[asset_name]['source'] == 'Quandl':
+                qu = Quandl()
+                qu.get(request=portfolio[asset_name]['ticket'], save_to_db=True)
 
     def __get_or_create(self, model, **kwargs):
         instance = self.manager.session.query(model).filter_by(**kwargs).first()
@@ -160,37 +165,6 @@ class ETL:
             self.manager.session.rollback()
             raise e
 
-    def get_CBR_ex3(self, start: datetime.datetime, end: datetime.datetime):
-        try:
-            client = Client('http://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL')
-            resp = client.service.BiCurBase(start, end)
-            source = self.__get_or_create(Source, name='cbr.ru/DailyInfoWebServ/DailyInfo')
-            cbr_id = self.manager.session.query(Category.id).filter(Category.name == 'cbr').first()
-            rate = self.__get_or_create(
-                Rates,
-                name='bivalcur',
-                category_id=cbr_id,
-                source_id=source.id,
-                tag='bivalcur'
-            )
-            rates_history = []
-            header = ['D0', 'VAL']
-            for tbl in resp['_value_1'].getchildren()[0].xpath('//BCB'):
-                row = [tbl.xpath(col)[0].text for col in header]
-                rates_history.append(
-                    RatesHistory(
-                        rates_id=rate.id,
-                        date=datetime.datetime.strptime(row[0].split('T', 1)[0], '%Y-%m-%d'),
-                        float_value=row[1],
-                        tag='bicurbase'
-                    )
-                )
-            self.manager.session.add_all(rates_history)
-            self.manager.session.commit()
-        except Exception as e:
-            self.manager.session.rollback()
-            raise e
-
     def get_PDF_case_1(self, scan_path, file_extention = 'pdf', source='PDF_case_1'):
             rsrcmgr = PDFResourceManager()
             sio = StringIO()
@@ -284,22 +258,3 @@ class ETL:
         except Exception as e:
             self.manager.session.rollback()
             raise e
-
-'''
-#example of usage
-
-if __name__ == '__main__':
-    from manager.DBManager import DBManager
-    from models.models import *
-    import datetime
-    DB = DBManager(db_name = 'ONN2', user='postgres', host='localhost', password = 'kplus12')
-    cats = [Category(name='futures', description='azaza'),
-            Category(name='call', description='azaza'),
-            Category(name='put', description='azaza'),
-            Category(name='cbr', description='azaza')]
-    DB.session.add_all(cats)
-    etl = ETL(manager=DB)
-    etl.get_Kospi_ex1("C:/Users/IvanL/OpenTRM/Presales/FinTech/Test Examples/Kopi Quote Eikon Loader.xlsx")
-    etl.get_JapanExchange_Derivatives_ex2('../rb_e20161027.txt.csv')
-    etl.get_CBR_ex3(datetime.datetime(2016, 10, 10), datetime.datetime.now())
-'''
