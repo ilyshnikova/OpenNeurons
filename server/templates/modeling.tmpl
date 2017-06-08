@@ -1,0 +1,21 @@
+<script type="text/javascript">
+    $(function () {
+        $('{{container}}').highcharts({
+            title : {
+                text: '{{title}}',
+            },
+            xAxis: [{ min: {{x_min or 'undefined'}}, max: {{x_max or 'undefined'}},  gridLineWidth: 1, }],
+            yAxis: [{ min: {{y_min or 'undefined'}}, max: {{y_max or 'undefined'}}, }],
+            series: [
+                {
+                    name: '{{title}}',
+                    data: [
+                        {% for point in data %}
+                            [{{point[0]}}, {{point[1]}}],
+                        {% endfor %}
+                    ],
+                },
+            ],
+        });
+    });
+</script>

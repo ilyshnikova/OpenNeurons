@@ -1,6 +1,6 @@
-<li> <a href="/rates?node={{node.id}}">{{node.name}}</a>
+<li> <a href="/rates?node={{node.id}}" style="margin-top=2px">{{node.name}}</a>
     {%if node.has_childs %}
-        <ul style="padding-left:20px">
+        <ul style="padding-left:20px;margin-top:5px">
          {%for ch in node.all_childs %}
               {%with node=ch, template_name="rec_tree.tmpl" %}
                    {%include template_name%}

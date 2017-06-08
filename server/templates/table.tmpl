@@ -1,20 +1,40 @@
-<div style="text-align:center;margin:7px">
+<script src="/files/js/table.js"> </script>
+
+    <div id="table" class="table-editable" style="margin-left:20px;margin-right:20px">
         <table class="table">
-            <thead>
-                <tr>
+            <tr class="active">
                 {% for el in head %}
-                    <th>{{el}}</th>
+                    <td>{{el}}</td>
                 {% endfor  %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in table %}
+                <th></th>
+            </tr>
+
+            {% for row in table %}
                 <tr>
                     {% for el in row %}
-                    <th>{{el}}</th>
+                    <td>{{el}}</td>
                     {% endfor  %}
+                    <td>
+                        <span class="table-remove glyphicon glyphicon-remove"></span>
+                    </td>
                 </tr>
-                {% endfor %}
-            </tbody>
+            {% endfor %}
+
+
+            <!-- This is our clonable table line -->
+            <tr class="hide">
+                {% for el in head %}
+                    <td contenteditable="true">0.0</td>
+                {% endfor  %}
+                <td>
+                    <span class="table-remove glyphicon glyphicon-remove"></span>
+                </td>
+            </tr>
         </table>
-</div>
+    </div>
+
+    <div>
+	<button type="button" class="btn btn-success btn-lg">
+		Add row
+	</button>
+    </div>

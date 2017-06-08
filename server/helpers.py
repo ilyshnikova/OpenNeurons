@@ -178,7 +178,7 @@ def add_datasets_to_model(base, model_id, datasets):
 def get_rates(base, category_id, cur_rate_id):
     categories = []
     rates = {}
-    head = ['Deta', 'Value', 'Tag']
+    head = ['Data', 'Value', 'Tag']
 
     # categories
     s = select([Category])

@@ -34,8 +34,9 @@ class KerasClassifier(Classifier):
         return model
 
     def fit(self, X, y, fit_args: 'keys: nb_epoch, batch_size and verbose'):
-        self.model.fit(X, y, **fit_args)
+        hist = self.model.fit(X, y, **fit_args)
         self.save_model()
+        return hist
 
     def evaluate(self, X, y, evaluate_args: 'keys: verbose'):
         loss, accuracy = self.model.evaluate(X, y, **evaluate_args)

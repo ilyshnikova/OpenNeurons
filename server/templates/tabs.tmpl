@@ -7,14 +7,14 @@
     {%endfor%}
 </ul>
 
-<div class="tab-content" style="width:600px">
+<div class="tab-content" style="width: 700px;margin-left: 200px;margin-right: 0;">
         {% if tabs|length == 0 %}
             <div class="tab-pane active">
                 No Rates.
             </div>
         {% else %}
             <div class="tab-pane active" id="{{cur_tab.id}}" style="width:600px">
-                <p>Tag : {{cur_tab.tag}}</p>
+                <p style="margin-left: 40%; font-size: 20; margin-top: 2%;">Tag : {{cur_tab.tag}}</p>
 
                 {%with head=cur_tab.head, table=cur_tab.table, template_name="table.tmpl" %}
                    {%include template_name%}
